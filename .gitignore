@@ -1,0 +1,22 @@
+# Local environment secrets
+.env
+.env.local
+backend/.env
+backend/.env.local
+ai-proxy/.env
+ai-proxy/.env.local
+JuniorGlobe/Config/LocalSecrets.xcconfig
+
+# Node dependencies
+node_modules/
+ai-proxy/node_modules/
+
+# Xcode and Swift build artifacts
+.build-cache/
+.derivedData/
+.derivedData-*/
+.swift-module-cache/
+.swiftpm-cache/
+
+# Local backend runtime artifacts
+backend/cache/

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JuniorGlobe Legal & Privacy</title>
+  <style>
+    :root {
+      --ink: #153042;
+      --muted: #567082;
+      --bg: #f6fbfb;
+      --card: rgba(255, 255, 255, 0.84);
+      --line: rgba(21, 48, 66, 0.12);
+      --taiwan: #2aa58f;
+      --japan: #e27c8f;
+      --us: #2e88c8;
+      --warm: #ffcc71;
+      --shadow: 0 18px 50px rgba(28, 53, 78, 0.12);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(42, 165, 143, 0.15), transparent 28%),
+        radial-gradient(circle at top right, rgba(226, 124, 143, 0.16), transparent 32%),
+        radial-gradient(circle at bottom center, rgba(46, 136, 200, 0.14), transparent 32%),
+        linear-gradient(180deg, #f9fcfc 0%, #eef7f8 100%);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 40px 20px 64px;
+    }
+
+    .hero {
+      padding: 34px 30px;
+      border-radius: 32px;
+      background:
+        linear-gradient(135deg, rgba(42, 165, 143, 0.94), rgba(123, 211, 168, 0.82)),
+        linear-gradient(135deg, rgba(46, 136, 200, 0.18), rgba(255, 204, 113, 0.16));
+      color: white;
+      box-shadow: var(--shadow);
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 720px;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .lang-switcher {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 24px 0 20px;
+    }
+
+    .lang-button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.76);
+      box-shadow: 0 10px 24px rgba(28, 53, 78, 0.08);
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+
+    .lang-button:hover,
+    .lang-button:focus-visible {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.96);
+      outline: none;
+    }
+
+    .lang-button.is-active[data-lang="zh-TW"] { background: rgba(42, 165, 143, 0.18); }
+    .lang-button.is-active[data-lang="ja-JP"] { background: rgba(226, 124, 143, 0.18); }
+    .lang-button.is-active[data-lang="en-US"] { background: rgba(46, 136, 200, 0.18); }
+
+    .lang-panel {
+      display: none;
+      gap: 18px;
+    }
+
+    .lang-panel.is-active {
+      display: grid;
+    }
+
+    .meta {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .card {
+      padding: 24px 22px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1.35rem;
+    }
+
+    .card h3 {
+      margin: 18px 0 8px;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .card p,
+    .card li {
+      line-height: 1.72;
+    }
+
+    .card ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .link-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .pill-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .pill-link:hover,
+    .pill-link:focus-visible {
+      outline: none;
+      background: #ffffff;
+    }
+
+    .contact {
+      display: grid;
+      gap: 8px;
+    }
+
+    .contact a {
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        padding-top: 24px;
+      }
+
+      .hero {
+        padding: 26px 20px;
+      }
+
+      .card {
+        padding: 20px 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>JuniorGlobe Legal & Privacy</h1>
+      <p>
+        Child privacy notice, Apple Standard EULA reference, and the current JuniorGlobe privacy policy
+        for the Taiwan, Japan, and U.S. language editions.
+      </p>
+    </section>
+
+    <nav class="lang-switcher" aria-label="Language switcher">
+      <button class="lang-button is-active" data-lang="zh-TW" type="button">繁體中文</button>
+      <button class="lang-button" data-lang="ja-JP" type="button">日本語</button>
+      <button class="lang-button" data-lang="en-US" type="button">English</button>
+    </nav>
+
+    <section class="lang-panel is-active" id="panel-zh-TW" lang="zh-Hant">
+      <p class="meta">最後更新：2026 年 4 月 27 日</p>
+
+      <article class="card">
+        <h2>COPPA 與兒少隱私說明</h2>
+        <p>JuniorGlobe 是為孩子閱讀世界新聞而設計的 app。我們把付款、還原購買與家長週報等家長功能放在家長鎖後方，並盡量減少兒童個人資料的收集。</p>
+        <h3>我們如何降低兒少資料收集</h3>
+        <ul>
+          <li>目前版本不要求孩子建立帳號、設定公開個人檔案、上傳照片、張貼公開內容或加入聊天室。</li>
+          <li>核心閱讀功能目前不需要聯絡人、相機、相簿、麥克風或精確位置權限。</li>
+        </ul>
+        <h3>哪些情況可能會有資料傳輸</h3>
+        <ul>
+          <li>當 app 讀取新聞來源、Apple 付款流程、RevenueCat 訂閱狀態或 app 設定的後端服務時，相關服務可能依一般網路運作處理 IP 位址與標準請求資訊。</li>
+          <li>當使用 AI 朗讀時，所選新聞文字、語言、閱讀年齡與語音設定會送到 app 設定的語音服務生成音檔。</li>
+        </ul>
+        <h3>家長權利與聯絡方式</h3>
+        <ul>
+          <li>家長如對兒少隱私、付款或資料處理有疑問，可以透過本頁底部的支援信箱聯絡開發者。</li>
+          <li>若家長不希望新聞文字送到遠端語音服務，請不要使用 AI 朗讀功能。</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://www.ftc.gov/legal-library/browse/rules/childrens-online-privacy-protection-rule-coppa" target="_blank" rel="noreferrer">FTC COPPA 官方說明 ↗</a>
+          <a class="pill-link" href="https://developer.apple.com/app-store/app-privacy-details/" target="_blank" rel="noreferrer">Apple App Privacy Details 官方頁面 ↗</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Apple 標準 EULA</h2>
+        <p>透過 App Store 下載與使用 JuniorGlobe 時，亦受 Apple 的《Licensed Application End User License Agreement》約束。</p>
+        <h3>適用方式</h3>
+        <ul>
+          <li>除非 app 另行提供自訂終端使用者授權合約，JuniorGlobe 目前採用 Apple App Store 的標準授權條款。</li>
+          <li>授權範圍、外部服務、免責聲明、責任限制與準據法等正式條款，請以 Apple 官方文件為準。</li>
+        </ul>
+        <h3>與本 app 功能的關係</h3>
+        <ul>
+          <li>JuniorGlobe 會連線到新聞來源、訂閱服務與遠端語音服務；這些外部服務的可用性可能影響 app 內容或朗讀功能。</li>
+          <li>App Store 的購買、退款與裝置使用規則，仍以 Apple 的條款與商店流程為準。</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noreferrer">Apple Standard EULA 官方連結 ↗</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>隱私權政策</h2>
+        <p>這份政策只描述 JuniorGlobe 目前版本實際存在的資料處理方式，不涵蓋尚未上線的功能。</p>
+        <h3>儲存在裝置上的資料</h3>
+        <ul>
+          <li>語言/版本偏好與閱讀年齡設定會儲存在裝置的 UserDefaults。</li>
+          <li>Premium 使用者的收藏、30 天 archive 與家長週報資料會儲存在裝置本機；家長週報是由本機資料整理而成。</li>
+          <li>AI 朗讀產生的音檔會快取在裝置上，用來加快再次播放，舊快取會自動清理。</li>
+        </ul>
+        <h3>透過網路請求的資料</h3>
+        <ul>
+          <li>app 會向可信新聞來源抓取 RSS 或新聞資料。</li>
+          <li>若你使用訂閱功能，Apple 與 RevenueCat 會處理購買、還原購買與訂閱權限狀態。</li>
+          <li>若啟用 Premium 整理稿服務，app 可能向設定的 rewrite 服務請求對應語言的整理版新聞 feed。</li>
+          <li>若使用 AI 朗讀，app 會把所選新聞文字、語言、閱讀年齡與語音設定送到設定的語音服務。</li>
+        </ul>
+        <h3>我們目前不做的事</h3>
+        <ul>
+          <li>目前版本不提供兒童社群貼文、公開聊天、個人化廣告或 app 內帳號註冊。</li>
+          <li>目前不會為核心功能主動要求聯絡人、相機、相簿、麥克風或精確位置權限。</li>
+        </ul>
+        <h3>保存與控制</h3>
+        <ul>
+          <li>刪除 app 會移除裝置上的本機資料。</li>
+          <li>若 Premium 權限取消，與 Premium library 相關的本機 archive 與收藏資料可能會被清除。</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://developer.apple.com/app-store/app-privacy-details/" target="_blank" rel="noreferrer">Apple App Privacy Details 官方頁面 ↗</a>
+          <a class="pill-link" href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noreferrer">Apple Standard EULA 官方連結 ↗</a>
+        </div>
+      </article>
+
+      <article class="card contact">
+        <h2>支援與隱私聯絡</h2>
+        <p><strong>開發者：Hsueh Yi An</strong></p>
+        <p>若家長對兒少隱私、訂閱、資料處理或 Apple 內購條款有問題，請來信：</p>
+        <a href="mailto:eric1207cvb@msn.com">eric1207cvb@msn.com</a>
+      </article>
+    </section>
+
+    <section class="lang-panel" id="panel-ja-JP" lang="ja">
+      <p class="meta">最終更新日：2026年4月27日</p>
+
+      <article class="card">
+        <h2>COPPA と子どものプライバシー</h2>
+        <p>JuniorGlobe は子どもが世界のニュースを読みやすくするための app です。課金、購入の復元、保護者向け週次レポートなどの保護者機能はペアレンタルゲートの後ろに配置し、子どもの個人情報の収集をできるだけ抑える方針です。</p>
+        <h3>収集を抑えるための設計</h3>
+        <ul>
+          <li>現行版では、子どもにアカウント作成、公開プロフィール設定、写真投稿、公開投稿、チャット参加を求めていません。</li>
+          <li>基本の読書機能のために、連絡先、カメラ、写真、マイク、正確な位置情報の権限は要求していません。</li>
+        </ul>
+        <h3>通信が発生する場面</h3>
+        <ul>
+          <li>app がニュースソース、Apple の課金処理、RevenueCat の購読状態、または app に設定されたバックエンドへ接続する際、通常のネットワーク動作として IP アドレスや標準的なリクエスト情報が各サービスで処理される場合があります。</li>
+          <li>AI 音声読み上げを使うと、選択したニュース本文、言語、読書年齢、音声設定が、音声生成のために app に設定された音声サービスへ送信されます。</li>
+        </ul>
+        <h3>保護者の権利と連絡先</h3>
+        <ul>
+          <li>子どものプライバシー、課金、データ取り扱いについて保護者が質問する場合は、このページ下部のサポートメールから開発者へ連絡できます。</li>
+          <li>ニュース本文が遠隔音声サービスへ送信されることを望まない場合は、AI 読み上げ機能を使用しないでください。</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://www.ftc.gov/legal-library/browse/rules/childrens-online-privacy-protection-rule-coppa" target="_blank" rel="noreferrer">FTC COPPA 公式ページ ↗</a>
+          <a class="pill-link" href="https://developer.apple.com/app-store/app-privacy-details/" target="_blank" rel="noreferrer">Apple App Privacy Details 公式ページ ↗</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Apple 標準 EULA</h2>
+        <p>App Store から JuniorGlobe をダウンロードして利用する場合、Apple の "Licensed Application End User License Agreement" も適用されます。</p>
+        <h3>適用範囲</h3>
+        <ul>
+          <li>app 独自の利用許諾契約が別途提示されない限り、JuniorGlobe は Apple App Store の標準利用許諾条件に従います。</li>
+          <li>利用許諾の範囲、外部サービス、免責、責任制限、準拠法などの正式な条項は Apple の公式文書を基準としてください。</li>
+        </ul>
+        <h3>本 app との関係</h3>
+        <ul>
+          <li>JuniorGlobe はニュースソース、購読サービス、遠隔音声サービスへ接続するため、これら外部サービスの可用性が app の内容や読み上げ機能に影響する場合があります。</li>
+          <li>App Store の購入、返金、デバイス利用ルールは Apple の条件とストア運用が優先されます。</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noreferrer">Apple Standard EULA 公式リンク ↗</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>プライバシーポリシー</h2>
+        <p>このポリシーは JuniorGlobe の現行版で実際に存在するデータ取り扱いのみを説明します。未公開機能は含みません。</p>
+        <h3>端末内に保存される情報</h3>
+        <ul>
+          <li>言語/版の設定と読書年齢設定は、端末の UserDefaults に保存されます。</li>
+          <li>Premium 利用時の保存記事、30 日アーカイブ、保護者向け週次レポート用データは端末内に保存され、週次レポートはそのローカルデータから作成されます。</li>
+          <li>AI 読み上げで生成された音声ファイルは再生待ち時間を短くするため端末にキャッシュされ、古いキャッシュは自動的に整理されます。</li>
+        </ul>
+        <h3>ネットワーク経由で扱う情報</h3>
+        <ul>
+          <li>app は信頼できるニュースソースから RSS やニュースデータを取得します。</li>
+          <li>購読機能を使う場合、Apple と RevenueCat が購入、購入の復元、購読権限状態を処理します。</li>
+          <li>Premium 要約稿サービスが有効な場合、app は設定された rewrite サービスへ言語別の要約ニュース feed を要求することがあります。</li>
+          <li>AI 読み上げを使う場合、選択したニュース本文、言語、読書年齢、音声設定が設定済みの音声サービスへ送信されます。</li>
+        </ul>
+        <h3>現在していないこと</h3>
+        <ul>
+          <li>現行版には子ども向けの公開 SNS 投稿、公開チャット、パーソナライズ広告、app 内アカウント登録機能はありません。</li>
+          <li>基本機能のために連絡先、カメラ、写真、マイク、正確な位置情報の権限を積極的に要求していません。</li>
+        </ul>
+        <h3>保存期間と管理</h3>
+        <ul>
+          <li>app を削除すると、端末に保存されたローカルデータは削除されます。</li>
+          <li>Premium 権限が終了した場合、Premium library に関連するローカルのアーカイブや保存記事データが削除されることがあります。</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://developer.apple.com/app-store/app-privacy-details/" target="_blank" rel="noreferrer">Apple App Privacy Details 公式ページ ↗</a>
+          <a class="pill-link" href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noreferrer">Apple Standard EULA 公式リンク ↗</a>
+        </div>
+      </article>
+
+      <article class="card contact">
+        <h2>サポートとプライバシー連絡先</h2>
+        <p><strong>開発者：Hsueh Yi An</strong></p>
+        <p>子どものプライバシー、購読、データの取り扱い、App Store の課金条件について保護者の方が質問される場合は、こちらへご連絡ください。</p>
+        <a href="mailto:eric1207cvb@msn.com">eric1207cvb@msn.com</a>
+      </article>
+    </section>
+
+    <section class="lang-panel" id="panel-en-US" lang="en">
+      <p class="meta">Last updated: April 27, 2026</p>
+
+      <article class="card">
+        <h2>COPPA &amp; Child Privacy Notice</h2>
+        <p>JuniorGlobe is designed to help children read world news in a kid-friendly way. Payments, restore purchases, and parent-only reports are placed behind a parent gate, and the current version aims to minimize collection of children's personal information.</p>
+        <h3>How the app reduces child data collection</h3>
+        <ul>
+          <li>The current version does not ask children to create accounts, publish profiles, upload photos, post publicly, or join chats.</li>
+          <li>Core reading features do not require contacts, camera, photo library, microphone, or precise location permissions.</li>
+        </ul>
+        <h3>When data may be transmitted</h3>
+        <ul>
+          <li>When the app connects to news sources, Apple purchase flows, RevenueCat subscription services, or app-configured backend services, those services may process IP address and standard request metadata as part of normal network operation.</li>
+          <li>When AI read-aloud is used, the selected story text, language, reading age, and voice settings are sent to the app's configured narration service to generate audio.</li>
+        </ul>
+        <h3>Parent rights and contact</h3>
+        <ul>
+          <li>Parents can contact the developer using the support email at the bottom of this page with questions about child privacy, billing, or data handling.</li>
+          <li>If a parent does not want story text sent to a remote narration service, the AI read-aloud feature should not be used.</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://www.ftc.gov/legal-library/browse/rules/childrens-online-privacy-protection-rule-coppa" target="_blank" rel="noreferrer">FTC COPPA Official Page ↗</a>
+          <a class="pill-link" href="https://developer.apple.com/app-store/app-privacy-details/" target="_blank" rel="noreferrer">Apple App Privacy Details ↗</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Apple Standard EULA</h2>
+        <p>If JuniorGlobe is downloaded and used through the App Store, use of the app is also subject to Apple's Licensed Application End User License Agreement.</p>
+        <h3>How it applies</h3>
+        <ul>
+          <li>Unless the app later provides a custom end user license agreement, JuniorGlobe currently relies on Apple's standard App Store license terms.</li>
+          <li>For scope of license, external services, disclaimers, limitation of liability, and governing law, the Apple document controls.</li>
+        </ul>
+        <h3>Relation to this app</h3>
+        <ul>
+          <li>JuniorGlobe connects to news sources, subscription services, and remote narration services, so availability of external services may affect content and read-aloud features.</li>
+          <li>App Store purchase, refund, and device-use rules remain governed by Apple's store terms and processes.</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noreferrer">Apple Standard EULA ↗</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Privacy Policy</h2>
+        <p>This policy describes the data handling that exists in the current version of JuniorGlobe. It does not cover features that have not shipped.</p>
+        <h3>Data stored on device</h3>
+        <ul>
+          <li>Language/edition preferences and reading-age preferences are stored in UserDefaults on the device.</li>
+          <li>Premium saved stories, the 30-day archive, and parent weekly-report data are stored locally on device, and the weekly report is generated from that local data.</li>
+          <li>AI narration audio files can be cached on device to reduce wait time for replay, and older cached files are pruned automatically.</li>
+        </ul>
+        <h3>Data requested over the network</h3>
+        <ul>
+          <li>The app fetches RSS or story data from trusted news sources.</li>
+          <li>If subscription features are used, Apple and RevenueCat process purchase, restore-purchase, and entitlement-status information.</li>
+          <li>If Premium rewritten briefs are enabled, the app may request rewritten story feeds from the configured rewrite service.</li>
+          <li>If AI read-aloud is used, the app sends the selected story text, language, reading age, and voice settings to the configured narration service.</li>
+        </ul>
+        <h3>What the current version does not do</h3>
+        <ul>
+          <li>The current version does not include child-facing social posting, public chat, personalized advertising, or in-app account registration.</li>
+          <li>The app does not actively request contacts, camera, photo library, microphone, or precise location permissions for its core reading features.</li>
+        </ul>
+        <h3>Retention and controls</h3>
+        <ul>
+          <li>Deleting the app removes the local data stored on the device.</li>
+          <li>If Premium access ends, locally stored archive and saved-story data tied to Premium library features may be cleared from the device.</li>
+        </ul>
+        <div class="link-list">
+          <a class="pill-link" href="https://developer.apple.com/app-store/app-privacy-details/" target="_blank" rel="noreferrer">Apple App Privacy Details ↗</a>
+          <a class="pill-link" href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noreferrer">Apple Standard EULA ↗</a>
+        </div>
+      </article>
+
+      <article class="card contact">
+        <h2>Support &amp; Privacy Contact</h2>
+        <p><strong>Developer: Hsueh Yi An</strong></p>
+        <p>Parents can use this address for questions about child privacy, subscriptions, data handling, or App Store purchase terms.</p>
+        <a href="mailto:eric1207cvb@msn.com">eric1207cvb@msn.com</a>
+      </article>
+    </section>
+
+    <footer>
+      JuniorGlobe legal and privacy reference page for GitHub Pages.
+    </footer>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll('.lang-button');
+    const panels = document.querySelectorAll('.lang-panel');
+
+    function activateLanguage(languageCode) {
+      buttons.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.lang === languageCode);
+      });
+
+      panels.forEach((panel) => {
+        panel.classList.toggle('is-active', panel.id === `panel-${languageCode}`);
+      });
+
+      document.documentElement.lang = languageCode === 'zh-TW' ? 'zh-Hant' : languageCode === 'ja-JP' ? 'ja' : 'en';
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => activateLanguage(button.dataset.lang));
+    });
+  </script>
+</body>
+</html>
