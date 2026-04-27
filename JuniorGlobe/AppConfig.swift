@@ -49,6 +49,14 @@ enum AppConfig {
         return nil
     }
 
+    nonisolated static var premiumRewriteBearerToken: String? {
+        stringConfigValue(for: "JUNIORGLOBE_PREMIUM_REWRITE_BEARER_TOKEN")
+    }
+
+    nonisolated static var premiumRewriteClientID: String {
+        stringConfigValue(for: "JUNIORGLOBE_PREMIUM_REWRITE_CLIENT_ID") ?? "ios-app"
+    }
+
     nonisolated static var remoteNarrationBaseURL: URL? {
         if let configuredURL = stringConfigValue(for: "JUNIORGLOBE_REMOTE_NARRATION_BASE_URL") {
             let normalized = configuredURL.lowercased()

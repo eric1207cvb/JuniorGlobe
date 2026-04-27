@@ -98,6 +98,23 @@ final class EditionSettingsTests: XCTestCase {
             XCTAssertTrue(allLinks.contains("https://www.ftc.gov/legal-library/browse/rules/childrens-online-privacy-protection-rule-coppa"))
         }
     }
+
+    func testParentGatePromptExistsForAllEditions() {
+        let challenge = ParentGateChallenge(firstNumber: 18, secondNumber: 7, operation: .addition)
+
+        XCTAssertEqual(AppEdition.taiwanZhHant.strings.parentGateFallbackPrompt(challenge), "18 + 7 = ?")
+        XCTAssertEqual(AppEdition.japanJa.strings.parentGateFallbackPrompt(challenge), "18 + 7 = ?")
+        XCTAssertEqual(AppEdition.unitedStatesEn.strings.parentGateFallbackPrompt(challenge), "18 + 7 = ?")
+    }
+
+    func testParentGateAcceptsAsciiAndFullWidthDigits() {
+        let challenge = ParentGateChallenge(firstNumber: 18, secondNumber: 7, operation: .addition)
+
+        XCTAssertTrue(challenge.matchesAnswer("25"))
+        XCTAssertTrue(challenge.matchesAnswer(" ２５ "))
+        XCTAssertFalse(challenge.matchesAnswer("26"))
+        XCTAssertFalse(challenge.matchesAnswer("二十五"))
+    }
 }
 
 final class StoryNarrationControllerTests: XCTestCase {

@@ -8,6 +8,7 @@ import Charts
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @StateObject private var subscriptionManager = SubscriptionManager()
     @StateObject private var newsFeedModel = NewsFeedViewModel()
     @StateObject private var premiumLibrary = PremiumLibraryViewModel()
@@ -19,6 +20,7 @@ struct ContentView: View {
     @State private var parentGateAnswer = ""
     @State private var parentGateErrorMessage: String?
     @State private var isShowingParentGateFallback = false
+    @FocusState private var isParentGateAnswerFieldFocused: Bool
 
     var body: some View {
         let currentEdition = editionSettings.resolvedEdition
@@ -29,11 +31,12 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    heroSection(snapshot: snapshot, palette: palette, edition: currentEdition)
-                    audienceSection(palette: palette, edition: currentEdition)
+                    topOverviewSection(snapshot: snapshot, palette: palette, edition: currentEdition)
                     storiesSection(snapshot: snapshot, palette: palette, edition: currentEdition)
                 }
                 .padding(20)
+                .frame(maxWidth: pageContentMaxWidth, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
             .background(background(for: palette).ignoresSafeArea())
             .navigationTitle("JuniorGlobe")
@@ -112,7 +115,7 @@ struct ContentView: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(strings.heroTitle)
-                            .font(.system(size: 31, weight: .bold, design: .rounded))
+                            .font(.system(size: usesRegularWidthLayout ? 37 : 31, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.white)
 
                         Text(strings.heroSubtitle)
@@ -148,6 +151,22 @@ struct ContentView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+        }
+    }
+
+    @ViewBuilder
+    private func topOverviewSection(snapshot: FeedSnapshot, palette: EditionPalette, edition: AppEdition) -> some View {
+        if usesRegularWidthLayout {
+            HStack(alignment: .top, spacing: 18) {
+                heroSection(snapshot: snapshot, palette: palette, edition: edition)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                audienceSection(palette: palette, edition: edition)
+                    .frame(width: 320)
+            }
+        } else {
+            heroSection(snapshot: snapshot, palette: palette, edition: edition)
+            audienceSection(palette: palette, edition: edition)
         }
     }
 
@@ -206,8 +225,10 @@ struct ContentView: View {
                     }
                 }
             } else {
-                ForEach(snapshot.stories) { story in
-                    storyCard(story, palette: palette, edition: edition)
+                LazyVGrid(columns: storyGridColumns, alignment: .leading, spacing: 18) {
+                    ForEach(snapshot.stories) { story in
+                        storyCard(story, palette: palette, edition: edition)
+                    }
                 }
             }
         }
@@ -719,6 +740,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(palette.accent)
+                .disabled(isShowingParentGateFallback)
             }
         }
         .padding(14)
@@ -861,16 +883,37 @@ struct ContentView: View {
     private func settingsPage(snapshot: FeedSnapshot, palette: EditionPalette, edition: AppEdition) -> some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
-                editionSettingsSection(palette: palette, edition: edition)
-                premiumSection(snapshot: snapshot, palette: palette, edition: edition)
+                if usesRegularWidthLayout {
+                    HStack(alignment: .top, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            editionSettingsSection(palette: palette, edition: edition)
+                            actionsSection(edition: edition)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        VStack(alignment: .leading, spacing: 18) {
+                            premiumSection(snapshot: snapshot, palette: palette, edition: edition)
+                            if subscriptionPolicy.isPremium {
+                                premiumLibrarySection(palette: palette, edition: edition)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                } else {
+                    editionSettingsSection(palette: palette, edition: edition)
+                    premiumSection(snapshot: snapshot, palette: palette, edition: edition)
+                    actionsSection(edition: edition)
+                }
+
                 if subscriptionPolicy.isPremium {
-                    premiumLibrarySection(palette: palette, edition: edition)
                     parentWeeklyReportSection(palette: palette, edition: edition)
                 }
-                actionsSection(edition: edition)
+
                 legalPrivacySection(edition: edition)
             }
             .padding(20)
+            .frame(maxWidth: settingsContentMaxWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .background(background(for: palette).ignoresSafeArea())
         .navigationTitle(edition.strings.settingsLabel)
@@ -889,17 +932,21 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    ForEach(premiumLibrary.archiveEntries) { entry in
-                        NavigationLink {
-                            archiveDayPage(entry, edition: edition)
-                        } label: {
-                            ArchiveEntryRow(entry: entry, appEdition: edition)
+                    LazyVGrid(columns: libraryGridColumns, alignment: .leading, spacing: 16) {
+                        ForEach(premiumLibrary.archiveEntries) { entry in
+                            NavigationLink {
+                                archiveDayPage(entry, edition: edition)
+                            } label: {
+                                ArchiveEntryRow(entry: entry, appEdition: edition)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
             .padding(20)
+            .frame(maxWidth: pageContentMaxWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .background(background(for: edition.palette).ignoresSafeArea())
         .navigationTitle(strings.archiveTitle)
@@ -930,12 +977,16 @@ struct ContentView: View {
                         }
                     }
 
-                    ForEach(entry.snapshot.stories) { story in
-                        archivedStoryCard(story, edition: entry.edition, ageBand: entry.ageBand, palette: entryPalette, appEdition: edition)
+                    LazyVGrid(columns: detailStoryGridColumns, alignment: .leading, spacing: 16) {
+                        ForEach(entry.snapshot.stories) { story in
+                            archivedStoryCard(story, edition: entry.edition, ageBand: entry.ageBand, palette: entryPalette, appEdition: edition)
+                        }
                     }
                 }
             }
             .padding(20)
+            .frame(maxWidth: pageContentMaxWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .background(background(for: entryPalette).ignoresSafeArea())
         .navigationTitle(dayKeyLabel(entry.dayKey))
@@ -956,12 +1007,16 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    ForEach(premiumLibrary.favoriteRecords) { record in
-                        favoriteStoryCard(record, palette: record.edition.palette, appEdition: edition)
+                    LazyVGrid(columns: detailStoryGridColumns, alignment: .leading, spacing: 16) {
+                        ForEach(premiumLibrary.favoriteRecords) { record in
+                            favoriteStoryCard(record, palette: record.edition.palette, appEdition: edition)
+                        }
                     }
                 }
             }
             .padding(20)
+            .frame(maxWidth: pageContentMaxWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .background(background(for: edition.palette).ignoresSafeArea())
         .navigationTitle(strings.favoritesTitle)
@@ -1200,6 +1255,7 @@ struct ContentView: View {
                     TextField(strings.parentGateFallbackPlaceholder, text: $parentGateAnswer)
                         .keyboardType(.numberPad)
                         .textFieldStyle(.roundedBorder)
+                        .focused($isParentGateAnswerFieldFocused)
 
                     if let parentGateErrorMessage {
                         Text(parentGateErrorMessage)
@@ -1230,11 +1286,23 @@ struct ContentView: View {
                     .foregroundStyle(.white)
                 }
                 .padding(20)
+                .frame(maxWidth: parentGateContentMaxWidth, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
             .background(background(for: edition.palette).ignoresSafeArea())
             .navigationTitle(strings.parentGateTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                isParentGateAnswerFieldFocused = true
+            }
             .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(strings.parentGateConfirmButtonTitle) {
+                        confirmParentGateFallback(for: edition)
+                    }
+                }
+
                 ToolbarItem(placement: .cancellationAction) {
                     Button(strings.parentGateCancelButtonTitle) {
                         dismissParentGateFallback()
@@ -1285,11 +1353,19 @@ struct ContentView: View {
 
     @MainActor
     private func requestParentGateUnlock() {
+        guard isParentGateUnlocked == false, isShowingParentGateFallback == false else {
+            return
+        }
+
         parentGateErrorMessage = nil
         presentParentGateFallback()
     }
 
     private func presentParentGateFallback() {
+        guard isParentGateUnlocked == false, isShowingParentGateFallback == false else {
+            return
+        }
+
         parentGateChallenge = ParentGateChallenge.generate()
         parentGateAnswer = ""
         parentGateErrorMessage = nil
@@ -1297,24 +1373,25 @@ struct ContentView: View {
     }
 
     private func dismissParentGateFallback() {
+        isParentGateAnswerFieldFocused = false
         isShowingParentGateFallback = false
         parentGateAnswer = ""
         parentGateErrorMessage = nil
     }
 
     private func confirmParentGateFallback(for edition: AppEdition) {
-        let normalizedAnswer = parentGateAnswer.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard normalizedAnswer == String(parentGateChallenge.answer) else {
+        parentGateErrorMessage = nil
+
+        guard parentGateChallenge.matchesAnswer(parentGateAnswer) else {
             parentGateErrorMessage = edition.strings.parentGateFallbackErrorLabel
             return
         }
 
+        isParentGateAnswerFieldFocused = false
         withAnimation(.easeInOut(duration: 0.2)) {
-            parentGateUnlockedUntil = Date().addingTimeInterval(10 * 60)
-            isShowingParentGateFallback = false
+            grantParentGateAccess()
         }
-        parentGateAnswer = ""
-        parentGateErrorMessage = nil
+        dismissParentGateFallback()
     }
 
     private func grantParentGateAccess() {
@@ -1728,6 +1805,49 @@ struct ContentView: View {
         editionSettings.resolvedEdition.strings.dayLabel(for: dayKey)
     }
 
+    private var usesRegularWidthLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+
+    private var pageContentMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 1180 : .infinity
+    }
+
+    private var settingsContentMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 1240 : .infinity
+    }
+
+    private var parentGateContentMaxWidth: CGFloat {
+        usesRegularWidthLayout ? 560 : .infinity
+    }
+
+    private var storyGridColumns: [GridItem] {
+        usesRegularWidthLayout
+            ? [
+                GridItem(.flexible(), spacing: 18, alignment: .top),
+                GridItem(.flexible(), spacing: 18, alignment: .top)
+            ]
+            : [GridItem(.flexible())]
+    }
+
+    private var libraryGridColumns: [GridItem] {
+        usesRegularWidthLayout
+            ? [
+                GridItem(.flexible(), spacing: 16, alignment: .top),
+                GridItem(.flexible(), spacing: 16, alignment: .top)
+            ]
+            : [GridItem(.flexible())]
+    }
+
+    private var detailStoryGridColumns: [GridItem] {
+        usesRegularWidthLayout
+            ? [
+                GridItem(.flexible(), spacing: 16, alignment: .top),
+                GridItem(.flexible(), spacing: 16, alignment: .top)
+            ]
+            : [GridItem(.flexible())]
+    }
+
     private func background(for palette: EditionPalette) -> some View {
         let backgroundColors = isDarkMode ? palette.darkBackgroundColors : palette.lightBackgroundColors
 
@@ -1822,6 +1942,37 @@ struct ParentGateChallenge: Equatable {
             return firstNumber + secondNumber
         case .subtraction:
             return firstNumber - secondNumber
+        }
+    }
+
+    func matchesAnswer(_ rawAnswer: String) -> Bool {
+        Self.parsedAnswer(from: rawAnswer) == answer
+    }
+
+    static func parsedAnswer(from rawAnswer: String) -> Int? {
+        let trimmed = rawAnswer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else {
+            return nil
+        }
+
+        var digits: [Int] = []
+        for character in trimmed {
+            if character.isWhitespace {
+                continue
+            }
+
+            guard let digit = character.wholeNumberValue else {
+                return nil
+            }
+            digits.append(digit)
+        }
+
+        guard digits.isEmpty == false else {
+            return nil
+        }
+
+        return digits.reduce(0) { partialResult, digit in
+            (partialResult * 10) + digit
         }
     }
 

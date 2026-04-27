@@ -222,10 +222,13 @@ final class CuratedNewsServiceTests: XCTestCase {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [PremiumRewriteURLProtocol.self]
         let session = URLSession(configuration: configuration)
+        PremiumRewriteURLProtocol.resetLastRequest()
         let liveService = LiveCuratedNewsService(
             session: session,
             cacheStore: DailyNewsCacheStore(baseURL: baseURL),
             premiumRewriteBaseURL: URL(string: "https://rewrite.example.com"),
+            premiumRewriteBearerToken: "test-premium-token",
+            premiumRewriteClientID: "juniorglobe-tests",
             refreshInterval: 20 * 60,
             now: { referenceDate }
         )
@@ -250,6 +253,89 @@ final class CuratedNewsServiceTests: XCTestCase {
         XCTAssertTrue(
             presentation.trustedSources.contains { $0.id == "premium-rewrite-www-abc-net-au" }
         )
+        XCTAssertEqual(PremiumRewriteURLProtocol.lastRequestValue(forHTTPHeaderField: "Authorization"), "Bearer test-premium-token")
+        XCTAssertEqual(PremiumRewriteURLProtocol.lastRequestValue(forHTTPHeaderField: "X-JuniorGlobe-Entitlement"), "premium")
+        XCTAssertEqual(PremiumRewriteURLProtocol.lastRequestValue(forHTTPHeaderField: "X-JuniorGlobe-Platform"), "ios")
+        XCTAssertEqual(PremiumRewriteURLProtocol.lastRequestValue(forHTTPHeaderField: "X-JuniorGlobe-Client"), "juniorglobe-tests")
+    }
+
+    @MainActor
+    func testPremiumRewriteIsDisabledWhenBearerTokenIsMissing() async throws {
+        let referenceDate = Date(timeIntervalSince1970: 1_776_720_240)
+        let dayKey = NewsCacheDayBucket.dayKey(for: referenceDate)
+        let baseURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("JuniorGlobeTests/\(#function)", isDirectory: true)
+        try? FileManager.default.removeItem(at: baseURL)
+        try FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+
+        let timestamp = Int(referenceDate.timeIntervalSince1970 * 1000)
+        let cachedItemsJSON = (1...10).map { index in
+            """
+            {
+              "category" : "science",
+              "fetchedAt" : \(timestamp),
+              "id" : "local-\(index)",
+              "link" : "https://example.com/local-\(index)",
+              "marketFocus" : [
+                "taiwan"
+              ],
+              "publishedAt" : \(timestamp),
+              "region" : "global",
+              "safetyNotes" : [
+                "safe"
+              ],
+              "source" : {
+                "authorityLabel" : "國家通訊社",
+                "countryLabel" : "台灣",
+                "id" : "cna-live",
+                "name" : "中央社",
+                "preferredMarkets" : [
+                  "taiwan"
+                ],
+                "reasonTrusted" : "trusted"
+              },
+              "summary" : "第\(index)則本地新聞讓孩子先掌握今天的世界重點。",
+              "title" : "本地重點新聞 \(index)"
+            }
+            """
+        }
+        .joined(separator: ",")
+
+        let cachedJSON = """
+        {
+          "dayKey" : "\(dayKey)",
+          "items" : [
+            \(cachedItemsJSON)
+          ],
+          "lastRefreshAt" : \(timestamp),
+          "sourceRefreshDates" : {
+          }
+        }
+        """
+        try cachedJSON.data(using: .utf8)?.write(to: baseURL.appendingPathComponent("\(dayKey).json"))
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [PremiumRewriteURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        PremiumRewriteURLProtocol.resetLastRequest()
+        let liveService = LiveCuratedNewsService(
+            session: session,
+            cacheStore: DailyNewsCacheStore(baseURL: baseURL),
+            premiumRewriteBaseURL: URL(string: "https://rewrite.example.com"),
+            premiumRewriteBearerToken: nil,
+            premiumRewriteClientID: "juniorglobe-tests",
+            refreshInterval: 20 * 60,
+            now: { referenceDate }
+        )
+
+        let presentation = await liveService.refreshPresentation(
+            for: .taiwanZhHant,
+            ageBand: .ages6to9,
+            includePremium: true
+        )
+
+        XCTAssertEqual(presentation.snapshot.stories.count, 10)
+        XCTAssertEqual(PremiumRewriteURLProtocol.lastRequestURL(), nil)
     }
 
     func testNewsSafetyFilterAvoidsEnglishSubstringFalsePositives() {
@@ -1301,10 +1387,29 @@ private final class RecordingNewsFeedURLProtocol: URLProtocol {
 private final class PremiumRewriteURLProtocol: URLProtocol {
     private static let queue = DispatchQueue(label: "PremiumRewriteURLProtocol.queue")
     private static var payload = "{}"
+    private static var lastRequest: URLRequest?
 
     static func setPayload(_ payload: String) {
         queue.sync {
             self.payload = payload
+        }
+    }
+
+    static func resetLastRequest() {
+        queue.sync {
+            lastRequest = nil
+        }
+    }
+
+    static func lastRequestValue(forHTTPHeaderField field: String) -> String? {
+        queue.sync {
+            lastRequest?.value(forHTTPHeaderField: field)
+        }
+    }
+
+    static func lastRequestURL() -> URL? {
+        queue.sync {
+            lastRequest?.url
         }
     }
 
@@ -1320,6 +1425,10 @@ private final class PremiumRewriteURLProtocol: URLProtocol {
         guard let url = request.url, url.host == "rewrite.example.com" else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
+        }
+
+        Self.queue.sync {
+            Self.lastRequest = request
         }
 
         let payload = Self.queue.sync { Self.payload }

@@ -936,6 +936,8 @@ final class LiveCuratedNewsService {
     private let parser = RSSFeedParser()
     private let cacheStore: DailyNewsCacheStore
     private let premiumRewriteBaseURL: URL?
+    private let premiumRewriteBearerToken: String?
+    private let premiumRewriteClientID: String
     private let refreshInterval: TimeInterval
     private let now: @Sendable () -> Date
 
@@ -943,12 +945,16 @@ final class LiveCuratedNewsService {
         session: URLSession = .shared,
         cacheStore: DailyNewsCacheStore? = nil,
         premiumRewriteBaseURL: URL? = AppConfig.premiumRewriteBaseURL,
+        premiumRewriteBearerToken: String? = AppConfig.premiumRewriteBearerToken,
+        premiumRewriteClientID: String = AppConfig.premiumRewriteClientID,
         refreshInterval: TimeInterval = 20 * 60,
         now: @escaping @Sendable () -> Date = Date.init
     ) {
         self.session = session
         self.cacheStore = cacheStore ?? DailyNewsCacheStore()
         self.premiumRewriteBaseURL = premiumRewriteBaseURL
+        self.premiumRewriteBearerToken = premiumRewriteBearerToken?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.premiumRewriteClientID = premiumRewriteClientID
         self.refreshInterval = refreshInterval
         self.now = now
     }
@@ -1188,7 +1194,9 @@ final class LiveCuratedNewsService {
         guard
             policy.usesPremiumRewriteStories,
             policy.premiumRewriteStoryCount > 0,
-            let premiumRewriteBaseURL
+            let premiumRewriteBaseURL,
+            let premiumRewriteBearerToken,
+            premiumRewriteBearerToken.isEmpty == false
         else {
             return nil
         }
@@ -1205,7 +1213,8 @@ final class LiveCuratedNewsService {
                 for: edition,
                 ageBand: ageBand,
                 limit: policy.premiumRewriteStoryCount,
-                baseURL: premiumRewriteBaseURL
+                baseURL: premiumRewriteBaseURL,
+                bearerToken: premiumRewriteBearerToken
             )
         } catch {
             remoteResult = nil
@@ -1251,13 +1260,20 @@ final class LiveCuratedNewsService {
         for edition: AppEdition,
         ageBand: AgeBand,
         limit: Int,
-        baseURL: URL
+        baseURL: URL,
+        bearerToken: String
     ) async throws -> PremiumRewriteFetchResult {
         guard let requestURL = premiumRewriteURL(baseURL: baseURL, edition: edition, limit: limit) else {
             throw RSSFeedParserError.unreadableFeed
         }
 
-        let (data, response) = try await session.data(from: requestURL)
+        var request = URLRequest(url: requestURL)
+        request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("premium", forHTTPHeaderField: "X-JuniorGlobe-Entitlement")
+        request.setValue("ios", forHTTPHeaderField: "X-JuniorGlobe-Platform")
+        request.setValue(premiumRewriteClientID, forHTTPHeaderField: "X-JuniorGlobe-Client")
+
+        let (data, response) = try await session.data(for: request)
         guard
             let httpResponse = response as? HTTPURLResponse,
             (200...299).contains(httpResponse.statusCode)
