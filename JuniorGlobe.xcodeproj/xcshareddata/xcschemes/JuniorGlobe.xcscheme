@@ -119,6 +119,9 @@
             ReferencedContainer = "container:JuniorGlobe.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <StoreKitConfigurationFileReference
+         identifier = "../../JuniorGlobe/StoreKit/JuniorGlobe.storekit">
+      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

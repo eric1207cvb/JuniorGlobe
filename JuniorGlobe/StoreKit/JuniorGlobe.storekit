@@ -1,0 +1,50 @@
+{
+  "identifier" : "C5E21A7B",
+  "nonRenewingSubscriptions" : [ ],
+  "products" : [ ],
+  "settings" : { },
+  "subscriptionGroups" : [
+    {
+      "id" : "D82F1A44",
+      "localizations" : [ ],
+      "name" : "JuniorGlobe Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [ ],
+          "codeOffers" : [ ],
+          "displayPrice" : "120.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "5AE13C29",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "解鎖完整新聞整理、收藏、歷史資料庫與家長週報。",
+              "displayName" : "JuniorGlobe Premium 月費版",
+              "locale" : "zh_TW"
+            },
+            {
+              "description" : "深いニュース要約、お気に入り、アーカイブ、保護者向け週間レポートを利用できます。",
+              "displayName" : "JuniorGlobe Premium 月額プラン",
+              "locale" : "ja_JP"
+            },
+            {
+              "description" : "Unlock deeper story summaries, favorites, archive access, and weekly parent reports.",
+              "displayName" : "JuniorGlobe Premium Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "juniorglobe.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "JuniorGlobe Premium Monthly",
+          "subscriptionGroupID" : "D82F1A44",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}
