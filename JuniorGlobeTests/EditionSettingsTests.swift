@@ -115,6 +115,21 @@ final class EditionSettingsTests: XCTestCase {
         XCTAssertFalse(challenge.matchesAnswer("26"))
         XCTAssertFalse(challenge.matchesAnswer("二十五"))
     }
+
+    func testParentGateProtectedCopyExistsForAllEditions() {
+        for edition in AppEdition.allCases {
+            let strings = edition.strings
+
+            XCTAssertFalse(strings.parentGateLockedDetail.isEmpty)
+            XCTAssertFalse(strings.parentGateUnlockedDetail.isEmpty)
+            XCTAssertEqual(strings.parentGateProtectedItems.count, 4)
+            XCTAssertFalse(strings.parentGateAuthenticatingLabel.isEmpty)
+            XCTAssertFalse(strings.parentGateCanceledLabel.isEmpty)
+            XCTAssertFalse(strings.parentGateRestoreHiddenLabel.isEmpty)
+            XCTAssertFalse(strings.parentGateWeeklyReportHiddenLabel.isEmpty)
+            XCTAssertFalse(strings.parentGateLinksHiddenLabel.isEmpty)
+        }
+    }
 }
 
 final class StoryNarrationControllerTests: XCTestCase {

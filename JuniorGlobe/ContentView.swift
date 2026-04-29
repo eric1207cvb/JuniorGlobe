@@ -5,6 +5,7 @@
 import SwiftUI
 import Combine
 import Charts
+import LocalAuthentication
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -20,6 +21,7 @@ struct ContentView: View {
     @State private var parentGateAnswer = ""
     @State private var parentGateErrorMessage: String?
     @State private var isShowingParentGateFallback = false
+    @State private var isAuthenticatingParentGate = false
     @FocusState private var isParentGateAnswerFieldFocused: Bool
 
     var body: some View {
@@ -654,9 +656,7 @@ struct ContentView: View {
                     }
                 }
 
-                if subscriptionManager.isSubscriber == false {
-                    parentalGateSection(palette: palette, edition: edition)
-                }
+                parentalGateSection(palette: palette, edition: edition)
 
                 if let message = subscriptionManager.storeErrorMessage {
                     Text(message.isEmpty ? "目前暫時無法顯示訂閱方案。" : "目前暫時無法顯示訂閱方案，請稍後再試。")
@@ -728,19 +728,34 @@ struct ContentView: View {
 
             if isParentGateUnlocked == false {
                 Button {
-                    requestParentGateUnlock()
+                    requestParentGateUnlock(for: edition)
                 } label: {
                     HStack {
                         Spacer()
-                        Label(strings.parentGateUnlockButtonTitle, systemImage: "person.crop.circle.badge.checkmark")
-                            .font(.subheadline.weight(.semibold))
+                        if isAuthenticatingParentGate {
+                            ProgressView()
+                                .tint(.white)
+                            Text(strings.parentGateAuthenticatingLabel)
+                                .font(.subheadline.weight(.semibold))
+                        } else {
+                            Label(strings.parentGateUnlockButtonTitle, systemImage: "person.crop.circle.badge.checkmark")
+                                .font(.subheadline.weight(.semibold))
+                        }
                         Spacer()
                     }
                     .padding(.vertical, 12)
                 }
                 .buttonStyle(.bordered)
                 .tint(palette.accent)
-                .disabled(isShowingParentGateFallback)
+                .disabled(isShowingParentGateFallback || isAuthenticatingParentGate)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(strings.parentGateProtectedItems, id: \.self) { item in
+                    Label(item, systemImage: "checkmark.circle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .padding(14)
@@ -798,7 +813,9 @@ struct ContentView: View {
                 Text(strings.weeklyReportTitle)
                     .font(.title3.weight(.bold))
 
-                if let report = premiumLibrary.weeklyReport {
+                if isParentGateUnlocked == false {
+                    parentGateLockedHint(strings.parentGateWeeklyReportHiddenLabel)
+                } else if let report = premiumLibrary.weeklyReport {
                     Text(strings.parentReportDateRange(report))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -1121,24 +1138,28 @@ struct ContentView: View {
                 .buttonStyle(.bordered)
                 .disabled(subscriptionManager.isRefreshingStatus || subscriptionManager.isLoadingOfferings || newsFeedModel.isLoading)
 
-                Button {
-                    Task {
-                        _ = await subscriptionManager.restorePurchases()
-                    }
-                } label: {
-                    HStack {
-                        Spacer()
-                        if subscriptionManager.isRestoring {
-                            ProgressView()
-                        } else {
-                            Label(edition.strings.restorePurchasesButtonTitle, systemImage: "creditcard.and.123")
+                if isParentGateUnlocked {
+                    Button {
+                        Task {
+                            _ = await subscriptionManager.restorePurchases()
                         }
-                        Spacer()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            if subscriptionManager.isRestoring {
+                                ProgressView()
+                            } else {
+                                Label(edition.strings.restorePurchasesButtonTitle, systemImage: "creditcard.and.123")
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
                     }
-                    .padding(.vertical, 12)
+                    .buttonStyle(.bordered)
+                    .disabled(subscriptionManager.isPurchasing || subscriptionManager.isRestoring)
+                } else {
+                    parentGateLockedHint(edition.strings.parentGateRestoreHiddenLabel)
                 }
-                .buttonStyle(.bordered)
-                .disabled(subscriptionManager.isPurchasing || subscriptionManager.isRestoring)
             }
         }
     }
@@ -1161,7 +1182,7 @@ struct ContentView: View {
 
                 ForEach(strings.legalDocuments) { document in
                     DisclosureGroup {
-                        legalDocumentBody(document)
+                        legalDocumentBody(document, allowsExternalLinks: isParentGateUnlocked)
                             .padding(.top, 8)
                     } label: {
                         Text(document.title)
@@ -1182,11 +1203,13 @@ struct ContentView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    if let supportURL = URL(string: "mailto:eric1207cvb@msn.com") {
+                    if isParentGateUnlocked, let supportURL = URL(string: "mailto:eric1207cvb@msn.com") {
                         Link(destination: supportURL) {
                             Label("eric1207cvb@msn.com", systemImage: "envelope.fill")
                                 .font(.subheadline.weight(.semibold))
                         }
+                    } else if isParentGateUnlocked == false {
+                        parentGateLockedHint(strings.parentGateLinksHiddenLabel)
                     }
                 }
             }
@@ -1194,7 +1217,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private func legalDocumentBody(_ document: LegalDocumentContent) -> some View {
+    private func legalDocumentBody(_ document: LegalDocumentContent, allowsExternalLinks: Bool) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(document.introduction)
                 .font(.subheadline)
@@ -1214,7 +1237,7 @@ struct ContentView: View {
                 }
             }
 
-            if document.links.isEmpty == false {
+            if allowsExternalLinks, document.links.isEmpty == false {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(document.links) { link in
                         if let url = URL(string: link.urlString) {
@@ -1340,10 +1363,6 @@ struct ContentView: View {
     }
 
     private var isParentGateUnlocked: Bool {
-        guard subscriptionManager.isSubscriber == false else {
-            return true
-        }
-
         guard let parentGateUnlockedUntil else {
             return false
         }
@@ -1352,13 +1371,25 @@ struct ContentView: View {
     }
 
     @MainActor
-    private func requestParentGateUnlock() {
-        guard isParentGateUnlocked == false, isShowingParentGateFallback == false else {
+    private func requestParentGateUnlock(for edition: AppEdition) {
+        guard
+            isParentGateUnlocked == false,
+            isShowingParentGateFallback == false,
+            isAuthenticatingParentGate == false
+        else {
             return
         }
 
         parentGateErrorMessage = nil
-        presentParentGateFallback()
+        isAuthenticatingParentGate = true
+
+        Task {
+            let outcome = await authenticateParentGate(for: edition)
+            await MainActor.run {
+                isAuthenticatingParentGate = false
+                handleParentGateAuthenticationOutcome(outcome, edition: edition)
+            }
+        }
     }
 
     private func presentParentGateFallback() {
@@ -1397,6 +1428,61 @@ struct ContentView: View {
     private func grantParentGateAccess() {
         parentGateUnlockedUntil = Date().addingTimeInterval(10 * 60)
         parentGateErrorMessage = nil
+    }
+
+    private func handleParentGateAuthenticationOutcome(
+        _ outcome: ParentGateAuthenticationOutcome,
+        edition: AppEdition
+    ) {
+        switch outcome {
+        case .unlocked:
+            withAnimation(.easeInOut(duration: 0.2)) {
+                grantParentGateAccess()
+            }
+        case .fallbackRequired:
+            presentParentGateFallback()
+        case .canceled:
+            parentGateErrorMessage = edition.strings.parentGateCanceledLabel
+        case .failed:
+            parentGateErrorMessage = edition.strings.parentGateUnlockFailedLabel
+        }
+    }
+
+    private func authenticateParentGate(for edition: AppEdition) async -> ParentGateAuthenticationOutcome {
+        let context = LAContext()
+        var policyError: NSError?
+
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &policyError) else {
+            return .fallbackRequired
+        }
+
+        return await withCheckedContinuation { continuation in
+            context.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: edition.strings.parentGateAuthenticationReason
+            ) { success, error in
+                if success {
+                    continuation.resume(returning: .unlocked)
+                    return
+                }
+
+                guard let authError = error as? LAError else {
+                    continuation.resume(returning: .failed)
+                    return
+                }
+
+                switch authError.code {
+                case .userCancel, .systemCancel, .appCancel:
+                    continuation.resume(returning: .canceled)
+                case .authenticationFailed:
+                    continuation.resume(returning: .failed)
+                case .biometryNotAvailable, .biometryNotEnrolled, .biometryLockout, .passcodeNotSet, .notInteractive, .invalidContext, .userFallback:
+                    continuation.resume(returning: .fallbackRequired)
+                default:
+                    continuation.resume(returning: .failed)
+                }
+            }
+        }
     }
 
     private func archivedStoryCard(
@@ -1915,6 +2001,30 @@ struct ContentView: View {
             ? Color.white.opacity(0.12)
             : Color.black.opacity(0.07)
     }
+
+    private func parentGateLockedHint(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "lock.fill")
+                .foregroundStyle(.secondary)
+
+            Text(text)
+                .foregroundStyle(.secondary)
+        }
+        .font(.footnote)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
+        )
+    }
+}
+
+private enum ParentGateAuthenticationOutcome {
+    case unlocked
+    case fallbackRequired
+    case canceled
+    case failed
 }
 
 struct ParentGateChallenge: Equatable {

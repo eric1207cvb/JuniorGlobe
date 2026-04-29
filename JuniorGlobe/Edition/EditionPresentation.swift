@@ -394,22 +394,22 @@ struct EditionStrings {
     var parentGateLockedDetail: String {
         switch edition {
         case .taiwanZhHant:
-            return "訂閱方案需要由家長先解鎖後才能查看與購買。"
+            return "家長先解鎖後，才能查看與購買訂閱方案、還原購買、查看家長週報，以及開啟家長支援連結。"
         case .japanJa:
-            return "プランの表示と購入は、保護者が先にロックを解除した後にだけ使えます。"
+            return "保護者が先にロックを解除すると、プランの表示と購入、購入の復元、保護者向け週報、保護者向けリンクを使えます。"
         case .unitedStatesEn:
-            return "A parent needs to unlock this section before plans can be viewed or purchased."
+            return "A parent needs to unlock this area before subscription plans, restore purchases, the parent weekly report, or parent support links can be opened."
         }
     }
 
     var parentGateUnlockedDetail: String {
         switch edition {
         case .taiwanZhHant:
-            return "家長鎖已暫時解鎖，現在可以查看訂閱方案。"
+            return "家長鎖已暫時解鎖，現在可以管理訂閱、還原購買、查看家長週報與家長支援連結。"
         case .japanJa:
-            return "保護者ロックが一時的に解除され、プランを表示できます。"
+            return "保護者ロックが一時的に解除され、プラン、購入の復元、保護者向け週報、保護者向けリンクを開けます。"
         case .unitedStatesEn:
-            return "Parent lock is temporarily open, so plans can be viewed now."
+            return "Parent Lock is temporarily open for subscription plans, restore purchases, the parent weekly report, and parent support links."
         }
     }
 
@@ -446,25 +446,73 @@ struct EditionStrings {
         }
     }
 
+    var parentGateProtectedItems: [String] {
+        switch edition {
+        case .taiwanZhHant:
+            return [
+                "查看與購買訂閱方案",
+                "還原 App Store 購買",
+                "查看家長週報",
+                "開啟家長支援與外部文件連結"
+            ]
+        case .japanJa:
+            return [
+                "プランの表示と購入",
+                "App Store購入の復元",
+                "保護者向け週報の表示",
+                "保護者向けサポートと外部資料リンクを開く"
+            ]
+        case .unitedStatesEn:
+            return [
+                "View and buy subscription plans",
+                "Restore App Store purchases",
+                "Open the parent weekly report",
+                "Open parent support and external document links"
+            ]
+        }
+    }
+
     var parentGateAuthenticationReason: String {
         switch edition {
         case .taiwanZhHant:
-            return "請由家長解鎖 JuniorGlobe 的訂閱與購買區。"
+            return "請由家長解鎖 JuniorGlobe 的購買與家長專區。"
         case .japanJa:
-            return "JuniorGlobeの購読と購入エリアを保護者が解除してください。"
+            return "JuniorGlobeの購入と保護者向けエリアを保護者が解除してください。"
         case .unitedStatesEn:
-            return "A parent needs to unlock JuniorGlobe's subscription area."
+            return "A parent needs to unlock JuniorGlobe's purchase and parent-only areas."
         }
     }
 
     var parentGateUnlockFailedLabel: String {
         switch edition {
         case .taiwanZhHant:
-            return "目前無法解鎖訂閱區，請再試一次。"
+            return "目前無法解鎖家長專區，請再試一次。"
         case .japanJa:
-            return "購読エリアを解除できませんでした。もう一度試してください。"
+            return "保護者向けエリアを解除できませんでした。もう一度試してください。"
         case .unitedStatesEn:
-            return "The subscription area could not be unlocked. Please try again."
+            return "The parent area could not be unlocked. Please try again."
+        }
+    }
+
+    var parentGateCanceledLabel: String {
+        switch edition {
+        case .taiwanZhHant:
+            return "已取消家長解鎖。"
+        case .japanJa:
+            return "保護者による解除がキャンセルされました。"
+        case .unitedStatesEn:
+            return "Parent unlock was canceled."
+        }
+    }
+
+    var parentGateAuthenticatingLabel: String {
+        switch edition {
+        case .taiwanZhHant:
+            return "正在確認裝置驗證"
+        case .japanJa:
+            return "デバイス認証を確認中"
+        case .unitedStatesEn:
+            return "Checking device authentication"
         }
     }
 
@@ -482,11 +530,11 @@ struct EditionStrings {
     var parentGateFallbackDetail: String {
         switch edition {
         case .taiwanZhHant:
-            return "請由家長回答下面的簡單加減題，答對後才會顯示訂閱方案。"
+            return "若目前無法使用裝置驗證，請由家長回答下面的數學題，答對後才會解鎖家長功能。"
         case .japanJa:
-            return "保護者が下のかんたんな足し算か引き算に答えると、プランを表示できます。"
+            return "デバイス認証が使えない場合は、保護者が下の計算に答えると保護者向け機能を開けます。"
         case .unitedStatesEn:
-            return "A parent needs to answer the simple math problem below before subscription plans can be shown."
+            return "If device authentication is unavailable, a parent can answer the math problem below to unlock purchases and parent-only sections."
         }
     }
 
@@ -535,6 +583,39 @@ struct EditionStrings {
             return "キャンセル"
         case .unitedStatesEn:
             return "Cancel"
+        }
+    }
+
+    var parentGateRestoreHiddenLabel: String {
+        switch edition {
+        case .taiwanZhHant:
+            return "請先使用家長鎖，才能還原購買。"
+        case .japanJa:
+            return "購入を復元するには、先に保護者ロックを解除してください。"
+        case .unitedStatesEn:
+            return "Use Parent Lock before restoring purchases."
+        }
+    }
+
+    var parentGateWeeklyReportHiddenLabel: String {
+        switch edition {
+        case .taiwanZhHant:
+            return "請先使用家長鎖，才能查看家長週報。"
+        case .japanJa:
+            return "保護者向け週報を見るには、先に保護者ロックを解除してください。"
+        case .unitedStatesEn:
+            return "Use Parent Lock before opening the parent weekly report."
+        }
+    }
+
+    var parentGateLinksHiddenLabel: String {
+        switch edition {
+        case .taiwanZhHant:
+            return "請先使用家長鎖，才能開啟家長支援信箱與外部文件連結。"
+        case .japanJa:
+            return "保護者向けメールと外部資料リンクを開くには、先に保護者ロックを解除してください。"
+        case .unitedStatesEn:
+            return "Use Parent Lock before opening parent support email or external document links."
         }
     }
 
@@ -1521,7 +1602,7 @@ private enum LegalContentCatalog {
     private static let traditionalChineseDocuments: [LegalDocumentContent] = [
         LegalDocumentContent(
             title: "COPPA 與兒少隱私說明",
-            introduction: "JuniorGlobe 是為孩子閱讀世界新聞而設計的 app。我們把付款、還原購買與家長週報等家長功能放在家長鎖後方，並盡量減少兒童個人資料的收集。",
+            introduction: "JuniorGlobe 是為孩子閱讀世界新聞而設計的 app。我們把付款、還原購買、家長週報與家長支援連結等家長功能放在家長鎖後方，並盡量減少兒童個人資料的收集。",
             sections: [
                 LegalDocumentSectionContent(
                     title: "我們如何降低兒少資料收集",
@@ -1619,7 +1700,7 @@ private enum LegalContentCatalog {
     private static let japaneseDocuments: [LegalDocumentContent] = [
         LegalDocumentContent(
             title: "COPPA と子どものプライバシー",
-            introduction: "JuniorGlobe は子どもが世界のニュースを読みやすくするための app です。課金、購入の復元、保護者向け週次レポートなどの保護者機能はペアレンタルゲートの後ろに配置し、子どもの個人情報の収集をできるだけ抑える方針です。",
+            introduction: "JuniorGlobe は子どもが世界のニュースを読みやすくするための app です。課金、購入の復元、保護者向け週次レポート、保護者向けリンクなどの保護者機能はペアレンタルゲートの後ろに配置し、子どもの個人情報の収集をできるだけ抑える方針です。",
             sections: [
                 LegalDocumentSectionContent(
                     title: "収集を抑えるための設計",
@@ -1717,7 +1798,7 @@ private enum LegalContentCatalog {
     private static let englishDocuments: [LegalDocumentContent] = [
         LegalDocumentContent(
             title: "COPPA & Child Privacy Notice",
-            introduction: "JuniorGlobe is designed to help children read world news in a kid-friendly way. Payments, restore purchases, and parent-only reports are placed behind a parent gate, and the current version aims to minimize collection of children's personal information.",
+            introduction: "JuniorGlobe is designed to help children read world news in a kid-friendly way. Payments, restore purchases, parent-only reports, and parent support links are placed behind a parent gate, and the current version aims to minimize collection of children's personal information.",
             sections: [
                 LegalDocumentSectionContent(
                     title: "How the app reduces child data collection",

@@ -28,23 +28,25 @@ enum Variant {
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let appIconURL = root.appendingPathComponent("JuniorGlobe/Assets.xcassets/AppIcon.appiconset")
 let launchArtworkURL = root.appendingPathComponent("JuniorGlobe/Assets.xcassets/LaunchSplashArtwork.imageset")
+let launchArtworkFreshURL = root.appendingPathComponent("JuniorGlobe/Assets.xcassets/LaunchArtworkFresh.imageset")
 let launchBackgroundURL = root.appendingPathComponent("JuniorGlobe/Assets.xcassets/LaunchBackground.colorset/Contents.json")
+let launchBackdropFreshURL = root.appendingPathComponent("JuniorGlobe/Assets.xcassets/LaunchBackdropFresh.colorset/Contents.json")
 
 let brightPalette = Palette(
     backgroundTop: NSColor(calibratedRed: 0.36, green: 0.84, blue: 0.98, alpha: 1),
     backgroundBottom: NSColor(calibratedRed: 1.00, green: 0.87, blue: 0.57, alpha: 1),
     panel: NSColor(calibratedRed: 0.88, green: 0.97, blue: 0.93, alpha: 0.60),
     panelGlow: NSColor(calibratedRed: 0.99, green: 0.96, blue: 0.75, alpha: 0.70),
-    globeOcean: NSColor(calibratedRed: 0.23, green: 0.75, blue: 0.92, alpha: 1),
-    globeLand: NSColor(calibratedRed: 0.65, green: 0.86, blue: 0.51, alpha: 1),
-    globeGrid: NSColor(calibratedRed: 0.77, green: 0.95, blue: 1.00, alpha: 0.55),
+    globeOcean: NSColor(calibratedRed: 0.07, green: 0.70, blue: 0.99, alpha: 1),
+    globeLand: NSColor(calibratedRed: 0.68, green: 0.92, blue: 0.34, alpha: 1),
+    globeGrid: NSColor(calibratedRed: 0.88, green: 0.98, blue: 1.00, alpha: 0.62),
     cardFill: NSColor(calibratedRed: 1.00, green: 1.00, blue: 1.00, alpha: 0.97),
     cardStroke: NSColor(calibratedRed: 0.85, green: 0.93, blue: 0.98, alpha: 1),
     cardInk: NSColor(calibratedRed: 0.19, green: 0.43, blue: 0.63, alpha: 1),
     cardAccentBlue: NSColor(calibratedRed: 0.27, green: 0.67, blue: 0.97, alpha: 1),
     cardAccentCoral: NSColor(calibratedRed: 0.97, green: 0.46, blue: 0.39, alpha: 1),
     cardAccentYellow: NSColor(calibratedRed: 0.98, green: 0.79, blue: 0.27, alpha: 1),
-    orbit: NSColor(calibratedRed: 1.00, green: 0.70, blue: 0.39, alpha: 1)
+    orbit: NSColor(calibratedRed: 1.00, green: 0.56, blue: 0.16, alpha: 1)
 )
 
 let darkPalette = Palette(
@@ -52,23 +54,23 @@ let darkPalette = Palette(
     backgroundBottom: NSColor(calibratedRed: 0.12, green: 0.47, blue: 0.49, alpha: 1),
     panel: NSColor(calibratedRed: 0.45, green: 0.79, blue: 0.88, alpha: 0.16),
     panelGlow: NSColor(calibratedRed: 0.96, green: 0.83, blue: 0.42, alpha: 0.18),
-    globeOcean: NSColor(calibratedRed: 0.28, green: 0.77, blue: 0.95, alpha: 1),
-    globeLand: NSColor(calibratedRed: 0.71, green: 0.89, blue: 0.57, alpha: 1),
-    globeGrid: NSColor(calibratedRed: 0.84, green: 0.96, blue: 1.00, alpha: 0.34),
+    globeOcean: NSColor(calibratedRed: 0.19, green: 0.78, blue: 1.00, alpha: 1),
+    globeLand: NSColor(calibratedRed: 0.76, green: 0.96, blue: 0.45, alpha: 1),
+    globeGrid: NSColor(calibratedRed: 0.88, green: 0.98, blue: 1.00, alpha: 0.42),
     cardFill: NSColor(calibratedRed: 0.97, green: 0.98, blue: 1.00, alpha: 0.96),
     cardStroke: NSColor(calibratedRed: 0.79, green: 0.90, blue: 0.98, alpha: 1),
     cardInk: NSColor(calibratedRed: 0.17, green: 0.39, blue: 0.56, alpha: 1),
     cardAccentBlue: NSColor(calibratedRed: 0.37, green: 0.77, blue: 0.99, alpha: 1),
     cardAccentCoral: NSColor(calibratedRed: 0.98, green: 0.54, blue: 0.47, alpha: 1),
     cardAccentYellow: NSColor(calibratedRed: 1.00, green: 0.83, blue: 0.38, alpha: 1),
-    orbit: NSColor(calibratedRed: 1.00, green: 0.75, blue: 0.43, alpha: 1)
+    orbit: NSColor(calibratedRed: 1.00, green: 0.63, blue: 0.22, alpha: 1)
 )
 
 let launchPalette = Palette(
     backgroundTop: .clear,
     backgroundBottom: .clear,
-    panel: NSColor(calibratedRed: 0.85, green: 0.96, blue: 0.92, alpha: 0.94),
-    panelGlow: NSColor(calibratedRed: 0.98, green: 0.95, blue: 0.79, alpha: 0.84),
+    panel: NSColor(calibratedRed: 0.87, green: 0.97, blue: 0.94, alpha: 0.96),
+    panelGlow: NSColor(calibratedRed: 1.00, green: 0.95, blue: 0.74, alpha: 0.90),
     globeOcean: brightPalette.globeOcean,
     globeLand: brightPalette.globeLand,
     globeGrid: brightPalette.globeGrid,
@@ -494,7 +496,7 @@ func renderLaunchArtwork(size: Int, outputURL: URL) throws {
     }
 }
 
-func writeLaunchBackgroundColor() throws {
+func writeLaunchBackgroundColors() throws {
     let json = """
     {
       "colors" : [
@@ -503,9 +505,9 @@ func writeLaunchBackgroundColor() throws {
             "color-space" : "srgb",
             "components" : {
               "alpha" : "1.000",
-              "blue" : "0.941",
-              "green" : "0.984",
-              "red" : "0.973"
+              "blue" : "0.957",
+              "green" : "0.989",
+              "red" : "0.955"
             }
           },
           "idiom" : "universal"
@@ -518,6 +520,7 @@ func writeLaunchBackgroundColor() throws {
     }
     """
     try json.write(to: launchBackgroundURL, atomically: true, encoding: .utf8)
+    try json.write(to: launchBackdropFreshURL, atomically: true, encoding: .utf8)
 }
 
 do {
@@ -527,7 +530,10 @@ do {
     try renderLaunchArtwork(size: 320, outputURL: launchArtworkURL.appendingPathComponent("launch-artwork.png"))
     try renderLaunchArtwork(size: 640, outputURL: launchArtworkURL.appendingPathComponent("launch-artwork@2x.png"))
     try renderLaunchArtwork(size: 960, outputURL: launchArtworkURL.appendingPathComponent("launch-artwork@3x.png"))
-    try writeLaunchBackgroundColor()
+    try renderLaunchArtwork(size: 320, outputURL: launchArtworkFreshURL.appendingPathComponent("launch-artwork.png"))
+    try renderLaunchArtwork(size: 640, outputURL: launchArtworkFreshURL.appendingPathComponent("launch-artwork@2x.png"))
+    try renderLaunchArtwork(size: 960, outputURL: launchArtworkFreshURL.appendingPathComponent("launch-artwork@3x.png"))
+    try writeLaunchBackgroundColors()
     print("Redrew JuniorGlobe icon and launch artwork.")
 } catch {
     fputs("Failed to redraw artwork: \\(error)\\n", stderr)
