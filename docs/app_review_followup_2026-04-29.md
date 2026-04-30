@@ -21,7 +21,7 @@ The updated app now requires `Parent Lock` before:
 - opening the `Parent Weekly Report`
 - opening parent support email and external legal/privacy links
 
-The unlock flow first tries iOS device-owner authentication and falls back to the in-app parent math challenge only when device authentication is unavailable.
+The unlock flow now uses an in-app multiplication-plus-one-digit challenge directly for every protected action.
 
 ## Reply Template: Metadata Only
 
@@ -58,7 +58,7 @@ Parent Lock is now required before:
 - opening the Parent Weekly Report
 - opening parent support email or external legal/privacy links
 
-The app first attempts iOS device-owner authentication. If device authentication is unavailable, the app falls back to the in-app parent math challenge.
+The app now requires the in-app multiplication-plus-one-digit challenge before any protected action can continue.
 
 We also updated Age Rating metadata so Age Assurance is set to None.
 

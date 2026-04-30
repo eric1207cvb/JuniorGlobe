@@ -5,7 +5,6 @@
 import SwiftUI
 import Combine
 import Charts
-import LocalAuthentication
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -16,12 +15,12 @@ struct ContentView: View {
     @StateObject private var narrationController = StoryNarrationController()
     @State private var editionSettings = EditionSettings()
     @State private var selectedAgeBand: AgeBand = .ages6to9
+    @State private var isShowingSettingsPage = false
     @State private var parentGateUnlockedUntil: Date?
     @State private var parentGateChallenge = ParentGateChallenge.generate()
     @State private var parentGateAnswer = ""
     @State private var parentGateErrorMessage: String?
-    @State private var isShowingParentGateFallback = false
-    @State private var isAuthenticatingParentGate = false
+    @State private var isShowingParentGateChallenge = false
     @FocusState private var isParentGateAnswerFieldFocused: Bool
 
     var body: some View {
@@ -45,8 +44,8 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        settingsPage(snapshot: snapshot, palette: palette, edition: currentEdition)
+                    Button {
+                        isShowingSettingsPage = true
                     } label: {
                         Image(systemName: "gearshape.fill")
                     }
@@ -89,8 +88,16 @@ struct ContentView: View {
                     )
                 }
             }
-            .sheet(isPresented: $isShowingParentGateFallback) {
+            .navigationDestination(isPresented: $isShowingSettingsPage) {
+                settingsPage(snapshot: snapshot, palette: palette, edition: currentEdition)
+            }
+            .sheet(isPresented: $isShowingParentGateChallenge) {
                 parentGateSheet(edition: currentEdition)
+            }
+            .onChange(of: isShowingSettingsPage) { _, isPresented in
+                if isPresented == false {
+                    relockParentGate()
+                }
             }
         }
     }
@@ -728,26 +735,19 @@ struct ContentView: View {
 
             if isParentGateUnlocked == false {
                 Button {
-                    requestParentGateUnlock(for: edition)
+                    requestParentGateUnlock()
                 } label: {
                     HStack {
                         Spacer()
-                        if isAuthenticatingParentGate {
-                            ProgressView()
-                                .tint(.white)
-                            Text(strings.parentGateAuthenticatingLabel)
-                                .font(.subheadline.weight(.semibold))
-                        } else {
-                            Label(strings.parentGateUnlockButtonTitle, systemImage: "person.crop.circle.badge.checkmark")
-                                .font(.subheadline.weight(.semibold))
-                        }
+                        Label(strings.parentGateUnlockButtonTitle, systemImage: "person.crop.circle.badge.checkmark")
+                            .font(.subheadline.weight(.semibold))
                         Spacer()
                     }
                     .padding(.vertical, 12)
                 }
                 .buttonStyle(.bordered)
                 .tint(palette.accent)
-                .disabled(isShowingParentGateFallback || isAuthenticatingParentGate)
+                .disabled(isShowingParentGateChallenge)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -1287,7 +1287,7 @@ struct ContentView: View {
                     }
 
                     Button {
-                        confirmParentGateFallback(for: edition)
+                        confirmParentGateChallenge(for: edition)
                     } label: {
                         HStack {
                             Spacer()
@@ -1322,13 +1322,13 @@ struct ContentView: View {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button(strings.parentGateConfirmButtonTitle) {
-                        confirmParentGateFallback(for: edition)
+                        confirmParentGateChallenge(for: edition)
                     }
                 }
 
                 ToolbarItem(placement: .cancellationAction) {
                     Button(strings.parentGateCancelButtonTitle) {
-                        dismissParentGateFallback()
+                        dismissParentGateChallenge()
                     }
                 }
             }
@@ -1371,46 +1371,37 @@ struct ContentView: View {
     }
 
     @MainActor
-    private func requestParentGateUnlock(for edition: AppEdition) {
+    private func requestParentGateUnlock() {
         guard
             isParentGateUnlocked == false,
-            isShowingParentGateFallback == false,
-            isAuthenticatingParentGate == false
+            isShowingParentGateChallenge == false
         else {
             return
         }
 
         parentGateErrorMessage = nil
-        isAuthenticatingParentGate = true
-
-        Task {
-            let outcome = await authenticateParentGate(for: edition)
-            await MainActor.run {
-                isAuthenticatingParentGate = false
-                handleParentGateAuthenticationOutcome(outcome, edition: edition)
-            }
-        }
+        presentParentGateChallenge()
     }
 
-    private func presentParentGateFallback() {
-        guard isParentGateUnlocked == false, isShowingParentGateFallback == false else {
+    private func presentParentGateChallenge() {
+        guard isParentGateUnlocked == false, isShowingParentGateChallenge == false else {
             return
         }
 
         parentGateChallenge = ParentGateChallenge.generate()
         parentGateAnswer = ""
         parentGateErrorMessage = nil
-        isShowingParentGateFallback = true
+        isShowingParentGateChallenge = true
     }
 
-    private func dismissParentGateFallback() {
+    private func dismissParentGateChallenge() {
         isParentGateAnswerFieldFocused = false
-        isShowingParentGateFallback = false
+        isShowingParentGateChallenge = false
         parentGateAnswer = ""
         parentGateErrorMessage = nil
     }
 
-    private func confirmParentGateFallback(for edition: AppEdition) {
+    private func confirmParentGateChallenge(for edition: AppEdition) {
         parentGateErrorMessage = nil
 
         guard parentGateChallenge.matchesAnswer(parentGateAnswer) else {
@@ -1422,7 +1413,7 @@ struct ContentView: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             grantParentGateAccess()
         }
-        dismissParentGateFallback()
+        dismissParentGateChallenge()
     }
 
     private func grantParentGateAccess() {
@@ -1430,58 +1421,12 @@ struct ContentView: View {
         parentGateErrorMessage = nil
     }
 
-    private func handleParentGateAuthenticationOutcome(
-        _ outcome: ParentGateAuthenticationOutcome,
-        edition: AppEdition
-    ) {
-        switch outcome {
-        case .unlocked:
-            withAnimation(.easeInOut(duration: 0.2)) {
-                grantParentGateAccess()
-            }
-        case .fallbackRequired:
-            presentParentGateFallback()
-        case .canceled:
-            parentGateErrorMessage = edition.strings.parentGateCanceledLabel
-        case .failed:
-            parentGateErrorMessage = edition.strings.parentGateUnlockFailedLabel
-        }
-    }
+    private func relockParentGate() {
+        parentGateUnlockedUntil = nil
+        parentGateErrorMessage = nil
 
-    private func authenticateParentGate(for edition: AppEdition) async -> ParentGateAuthenticationOutcome {
-        let context = LAContext()
-        var policyError: NSError?
-
-        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &policyError) else {
-            return .fallbackRequired
-        }
-
-        return await withCheckedContinuation { continuation in
-            context.evaluatePolicy(
-                .deviceOwnerAuthentication,
-                localizedReason: edition.strings.parentGateAuthenticationReason
-            ) { success, error in
-                if success {
-                    continuation.resume(returning: .unlocked)
-                    return
-                }
-
-                guard let authError = error as? LAError else {
-                    continuation.resume(returning: .failed)
-                    return
-                }
-
-                switch authError.code {
-                case .userCancel, .systemCancel, .appCancel:
-                    continuation.resume(returning: .canceled)
-                case .authenticationFailed:
-                    continuation.resume(returning: .failed)
-                case .biometryNotAvailable, .biometryNotEnrolled, .biometryLockout, .passcodeNotSet, .notInteractive, .invalidContext, .userFallback:
-                    continuation.resume(returning: .fallbackRequired)
-                default:
-                    continuation.resume(returning: .failed)
-                }
-            }
+        if isShowingParentGateChallenge {
+            dismissParentGateChallenge()
         }
     }
 
@@ -2020,39 +1965,29 @@ struct ContentView: View {
     }
 }
 
-private enum ParentGateAuthenticationOutcome {
-    case unlocked
-    case fallbackRequired
-    case canceled
-    case failed
-}
-
 struct ParentGateChallenge: Equatable {
-    enum Operation: CaseIterable, Equatable {
-        case addition
-        case subtraction
+    struct MultiplicationTerm: Equatable {
+        let leftNumber: Int
+        let rightNumber: Int
 
-        var symbol: String {
-            switch self {
-            case .addition:
-                return "+"
-            case .subtraction:
-                return "-"
-            }
+        var answer: Int {
+            leftNumber * rightNumber
+        }
+
+        var promptText: String {
+            "\(leftNumber) × \(rightNumber)"
         }
     }
 
-    let firstNumber: Int
-    let secondNumber: Int
-    let operation: Operation
+    let multiplicationTerm: MultiplicationTerm
+    let extraDigit: Int
 
     var answer: Int {
-        switch operation {
-        case .addition:
-            return firstNumber + secondNumber
-        case .subtraction:
-            return firstNumber - secondNumber
-        }
+        multiplicationTerm.answer + extraDigit
+    }
+
+    var promptText: String {
+        "\(multiplicationTerm.promptText) + \(extraDigit) = ?"
     }
 
     func matchesAnswer(_ rawAnswer: String) -> Bool {
@@ -2087,23 +2022,13 @@ struct ParentGateChallenge: Equatable {
     }
 
     static func generate() -> ParentGateChallenge {
-        let operation = Operation.allCases.randomElement() ?? .addition
-
-        switch operation {
-        case .addition:
-            return ParentGateChallenge(
-                firstNumber: Int.random(in: 12...29),
-                secondNumber: Int.random(in: 3...9),
-                operation: .addition
-            )
-        case .subtraction:
-            let secondNumber = Int.random(in: 3...9)
-            return ParentGateChallenge(
-                firstNumber: Int.random(in: max(12, secondNumber + 4)...29),
-                secondNumber: secondNumber,
-                operation: .subtraction
-            )
-        }
+        ParentGateChallenge(
+            multiplicationTerm: MultiplicationTerm(
+                leftNumber: Int.random(in: 2...9),
+                rightNumber: Int.random(in: 2...9)
+            ),
+            extraDigit: Int.random(in: 0...9)
+        )
     }
 }
 

@@ -475,22 +475,22 @@ struct EditionStrings {
     var parentGateAuthenticationReason: String {
         switch edition {
         case .taiwanZhHant:
-            return "請由家長解鎖 JuniorGlobe 的購買與家長專區。"
+            return "請由家長完成解鎖題目後，再開啟 JuniorGlobe 的購買與家長專區。"
         case .japanJa:
-            return "JuniorGlobeの購入と保護者向けエリアを保護者が解除してください。"
+            return "JuniorGlobeの購入と保護者向けエリアを開く前に、保護者が解除用の問題に答えてください。"
         case .unitedStatesEn:
-            return "A parent needs to unlock JuniorGlobe's purchase and parent-only areas."
+            return "A parent needs to answer the unlock question before opening JuniorGlobe's purchase and parent-only areas."
         }
     }
 
     var parentGateUnlockFailedLabel: String {
         switch edition {
         case .taiwanZhHant:
-            return "目前無法解鎖家長專區，請再試一次。"
+            return "目前無法解鎖家長專區，請由家長再試一次。"
         case .japanJa:
-            return "保護者向けエリアを解除できませんでした。もう一度試してください。"
+            return "保護者向けエリアを解除できませんでした。保護者がもう一度試してください。"
         case .unitedStatesEn:
-            return "The parent area could not be unlocked. Please try again."
+            return "The parent area could not be unlocked. Please let a parent try again."
         }
     }
 
@@ -508,11 +508,11 @@ struct EditionStrings {
     var parentGateAuthenticatingLabel: String {
         switch edition {
         case .taiwanZhHant:
-            return "正在確認裝置驗證"
+            return "正在準備家長題目"
         case .japanJa:
-            return "デバイス認証を確認中"
+            return "保護者向けの問題を準備中"
         case .unitedStatesEn:
-            return "Checking device authentication"
+            return "Preparing the parent question"
         }
     }
 
@@ -530,16 +530,16 @@ struct EditionStrings {
     var parentGateFallbackDetail: String {
         switch edition {
         case .taiwanZhHant:
-            return "若目前無法使用裝置驗證，請由家長回答下面的數學題，答對後才會解鎖家長功能。"
+            return "請由家長回答下面的 99 乘法加個位數題目。答對後，才會解鎖購買與家長功能。"
         case .japanJa:
-            return "デバイス認証が使えない場合は、保護者が下の計算に答えると保護者向け機能を開けます。"
+            return "下の九九に1桁の数を足す計算に保護者が答えると、購入と保護者向け機能を開けます。"
         case .unitedStatesEn:
-            return "If device authentication is unavailable, a parent can answer the math problem below to unlock purchases and parent-only sections."
+            return "A parent must solve the multiplication-plus-one-digit question below before purchases and parent-only sections can be opened."
         }
     }
 
     func parentGateFallbackPrompt(_ challenge: ParentGateChallenge) -> String {
-        "\(challenge.firstNumber) \(challenge.operation.symbol) \(challenge.secondNumber) = ?"
+        challenge.promptText
     }
 
     var parentGateFallbackPlaceholder: String {

@@ -100,20 +100,26 @@ final class EditionSettingsTests: XCTestCase {
     }
 
     func testParentGatePromptExistsForAllEditions() {
-        let challenge = ParentGateChallenge(firstNumber: 18, secondNumber: 7, operation: .addition)
+        let challenge = ParentGateChallenge(
+            multiplicationTerm: .init(leftNumber: 8, rightNumber: 7),
+            extraDigit: 4
+        )
 
-        XCTAssertEqual(AppEdition.taiwanZhHant.strings.parentGateFallbackPrompt(challenge), "18 + 7 = ?")
-        XCTAssertEqual(AppEdition.japanJa.strings.parentGateFallbackPrompt(challenge), "18 + 7 = ?")
-        XCTAssertEqual(AppEdition.unitedStatesEn.strings.parentGateFallbackPrompt(challenge), "18 + 7 = ?")
+        XCTAssertEqual(AppEdition.taiwanZhHant.strings.parentGateFallbackPrompt(challenge), "8 × 7 + 4 = ?")
+        XCTAssertEqual(AppEdition.japanJa.strings.parentGateFallbackPrompt(challenge), "8 × 7 + 4 = ?")
+        XCTAssertEqual(AppEdition.unitedStatesEn.strings.parentGateFallbackPrompt(challenge), "8 × 7 + 4 = ?")
     }
 
     func testParentGateAcceptsAsciiAndFullWidthDigits() {
-        let challenge = ParentGateChallenge(firstNumber: 18, secondNumber: 7, operation: .addition)
+        let challenge = ParentGateChallenge(
+            multiplicationTerm: .init(leftNumber: 8, rightNumber: 7),
+            extraDigit: 4
+        )
 
-        XCTAssertTrue(challenge.matchesAnswer("25"))
-        XCTAssertTrue(challenge.matchesAnswer(" ２５ "))
-        XCTAssertFalse(challenge.matchesAnswer("26"))
-        XCTAssertFalse(challenge.matchesAnswer("二十五"))
+        XCTAssertTrue(challenge.matchesAnswer("60"))
+        XCTAssertTrue(challenge.matchesAnswer(" ６０ "))
+        XCTAssertFalse(challenge.matchesAnswer("61"))
+        XCTAssertFalse(challenge.matchesAnswer("六十"))
     }
 
     func testParentGateProtectedCopyExistsForAllEditions() {
@@ -122,6 +128,7 @@ final class EditionSettingsTests: XCTestCase {
 
             XCTAssertFalse(strings.parentGateLockedDetail.isEmpty)
             XCTAssertFalse(strings.parentGateUnlockedDetail.isEmpty)
+            XCTAssertFalse(strings.parentGateFallbackDetail.isEmpty)
             XCTAssertEqual(strings.parentGateProtectedItems.count, 4)
             XCTAssertFalse(strings.parentGateAuthenticatingLabel.isEmpty)
             XCTAssertFalse(strings.parentGateCanceledLabel.isEmpty)
@@ -129,6 +136,10 @@ final class EditionSettingsTests: XCTestCase {
             XCTAssertFalse(strings.parentGateWeeklyReportHiddenLabel.isEmpty)
             XCTAssertFalse(strings.parentGateLinksHiddenLabel.isEmpty)
         }
+
+        XCTAssertFalse(AppEdition.taiwanZhHant.strings.parentGateFallbackDetail.contains("裝置驗證"))
+        XCTAssertFalse(AppEdition.japanJa.strings.parentGateFallbackDetail.contains("デバイス認証"))
+        XCTAssertFalse(AppEdition.unitedStatesEn.strings.parentGateFallbackDetail.localizedCaseInsensitiveContains("device authentication"))
     }
 }
 
@@ -644,20 +655,26 @@ final class StoryNarrationControllerTests: XCTestCase {
 }
 
 final class ParentGateChallengeTests: XCTestCase {
-    func testParentGateChallengeCalculatesAdditionAndSubtractionAnswers() {
-        let addition = ParentGateChallenge(firstNumber: 18, secondNumber: 7, operation: .addition)
-        let subtraction = ParentGateChallenge(firstNumber: 18, secondNumber: 7, operation: .subtraction)
+    func testParentGateChallengeCalculatesMultiplicationPlusSingleDigitAnswers() {
+        let multiplication = ParentGateChallenge(
+            multiplicationTerm: .init(leftNumber: 8, rightNumber: 7),
+            extraDigit: 4
+        )
 
-        XCTAssertEqual(addition.answer, 25)
-        XCTAssertEqual(subtraction.answer, 11)
+        XCTAssertEqual(multiplication.answer, 60)
     }
 
-    func testGeneratedParentGateChallengesStayWithinChildSafeMathRange() {
+    func testGeneratedParentGateChallengesUseNineByNinePlusSingleDigit() {
         for _ in 0..<200 {
             let challenge = ParentGateChallenge.generate()
-            XCTAssertGreaterThanOrEqual(challenge.firstNumber, 12)
-            XCTAssertGreaterThanOrEqual(challenge.secondNumber, 3)
-            XCTAssertGreaterThanOrEqual(challenge.answer, 0)
+            XCTAssertGreaterThanOrEqual(challenge.multiplicationTerm.leftNumber, 2)
+            XCTAssertLessThanOrEqual(challenge.multiplicationTerm.leftNumber, 9)
+            XCTAssertGreaterThanOrEqual(challenge.multiplicationTerm.rightNumber, 2)
+            XCTAssertLessThanOrEqual(challenge.multiplicationTerm.rightNumber, 9)
+            XCTAssertGreaterThanOrEqual(challenge.extraDigit, 0)
+            XCTAssertLessThanOrEqual(challenge.extraDigit, 9)
+            XCTAssertGreaterThanOrEqual(challenge.answer, 4)
+            XCTAssertLessThanOrEqual(challenge.answer, 90)
         }
     }
 }

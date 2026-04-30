@@ -162,6 +162,11 @@ final class StoryNarrationController: NSObject, ObservableObject {
         let endSeconds: Double
     }
 
+    private struct ActiveNarrationContext {
+        let request: StoryNarrationRequest
+        let segments: [RemoteNarrationSegmentPayload]
+    }
+
     private enum RemoteNarrationClientError: Error {
         case serviceUnavailable
         case invalidResponse
@@ -185,12 +190,17 @@ final class StoryNarrationController: NSObject, ObservableObject {
     private let session: URLSession
     private let narrationBaseURL: URL?
     private let audioCacheDirectoryURL: URL
+    private let speechSynthesizer = AVSpeechSynthesizer()
     private var player: AVPlayer?
     private var playerTimeObserver: Any?
     private var playerEndObserver: NSObjectProtocol?
     private var playerFailureObserver: NSObjectProtocol?
     private var playerAudioFileURL: URL?
     private var activeSentenceTimings: [ActiveNarrationTiming] = []
+    private var activeNarrationContext: ActiveNarrationContext?
+    private var localSpeechHighlightsByUtteranceID: [ObjectIdentifier: StoryNarrationHighlight] = [:]
+    private var localSpeechUtteranceIDsInOrder: [ObjectIdentifier] = []
+    private var isStoppingLocalSpeech = false
     private var narrationTask: Task<Void, Never>?
 
     init(
@@ -204,6 +214,7 @@ final class StoryNarrationController: NSObject, ObservableObject {
         self.audioCacheDirectoryURL = cachesURL
             .appendingPathComponent("JuniorGlobe/NarrationAudioCache", isDirectory: true)
         super.init()
+        speechSynthesizer.delegate = self
         prepareNarrationCacheDirectoryIfNeeded()
     }
 
@@ -231,6 +242,8 @@ final class StoryNarrationController: NSObject, ObservableObject {
         narrationTask?.cancel()
         narrationTask = nil
         cleanupPlayer()
+        stopLocalSpeechIfNeeded()
+        activeNarrationContext = nil
         activeStoryID = nil
         activeHighlight = nil
         activeStatus = nil
@@ -241,15 +254,6 @@ final class StoryNarrationController: NSObject, ObservableObject {
         configureAudioSessionIfNeeded()
         activeStoryID = request.id
 
-        guard narrationBaseURL != nil else {
-            activeStatus = StoryNarrationStatus(
-                requestID: request.id,
-                stage: .failed(.serviceUnavailable),
-                progress: nil
-            )
-            return
-        }
-
         let payload = Self.remoteJobRequest(for: request)
         let segments = Self.remoteNarrationSegments(for: request)
         let cacheKey = Self.remoteNarrationCacheKey(
@@ -258,6 +262,7 @@ final class StoryNarrationController: NSObject, ObservableObject {
             edition: request.edition,
             ageBand: request.ageBand
         )
+        activeNarrationContext = ActiveNarrationContext(request: request, segments: segments)
         activeStatus = StoryNarrationStatus(
             requestID: request.id,
             stage: .requestingScript,
@@ -266,6 +271,7 @@ final class StoryNarrationController: NSObject, ObservableObject {
 
         narrationTask = Task { [weak self] in
             await self?.runRemoteNarration(
+                request,
                 payload,
                 segments: segments,
                 cacheKey: cacheKey,
@@ -287,16 +293,12 @@ final class StoryNarrationController: NSObject, ObservableObject {
     }
 
     private func runRemoteNarration(
+        _ request: StoryNarrationRequest,
         _ payload: RemoteSpeechRequest,
         segments: [RemoteNarrationSegmentPayload],
         cacheKey: String,
         requestID: String
     ) async {
-        guard let narrationBaseURL else {
-            setFailure(.serviceUnavailable, requestID: requestID)
-            return
-        }
-
         do {
             try Task.checkCancellation()
             if let cachedAudioURL = cachedNarrationAudioURL(for: cacheKey) {
@@ -311,6 +313,17 @@ final class StoryNarrationController: NSObject, ObservableObject {
                 } catch {
                     removeCachedNarrationAudio(for: cacheKey)
                 }
+            }
+
+            guard let narrationBaseURL else {
+                startLocalNarration(
+                    for: request,
+                    segments: segments,
+                    requestID: requestID,
+                    fallbackReason: .serviceUnavailable
+                )
+                narrationTask = nil
+                return
             }
 
             activeStatus = StoryNarrationStatus(
@@ -330,11 +343,26 @@ final class StoryNarrationController: NSObject, ObservableObject {
         } catch is CancellationError {
             return
         } catch let error as URLError where error.code == .timedOut {
-            setFailure(.timedOut, requestID: requestID)
+            startLocalNarration(
+                for: request,
+                segments: segments,
+                requestID: requestID,
+                fallbackReason: .timedOut
+            )
         } catch let error as RemoteNarrationClientError {
-            setFailure(error.failureReason, requestID: requestID)
+            startLocalNarration(
+                for: request,
+                segments: segments,
+                requestID: requestID,
+                fallbackReason: error.failureReason
+            )
         } catch {
-            setFailure(.invalidResponse, requestID: requestID)
+            startLocalNarration(
+                for: request,
+                segments: segments,
+                requestID: requestID,
+                fallbackReason: .invalidResponse
+            )
         }
     }
 
@@ -346,7 +374,7 @@ final class StoryNarrationController: NSObject, ObservableObject {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 90
+        request.timeoutInterval = 15
         request.httpBody = try JSONEncoder().encode(payload)
 
         let (data, response) = try await session.data(for: request)
@@ -439,7 +467,10 @@ final class StoryNarrationController: NSObject, ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.setFailure(.generationFailed, requestID: requestID)
+                self?.fallbackToLocalNarrationIfPossible(
+                    reason: .generationFailed,
+                    requestID: requestID
+                )
             }
         }
     }
@@ -459,6 +490,8 @@ final class StoryNarrationController: NSObject, ObservableObject {
     private func finishPlayback() {
         narrationTask = nil
         cleanupPlayer()
+        stopLocalSpeechIfNeeded()
+        activeNarrationContext = nil
         activeStoryID = nil
         activeHighlight = nil
         activeStatus = nil
@@ -470,6 +503,8 @@ final class StoryNarrationController: NSObject, ObservableObject {
     ) {
         narrationTask = nil
         cleanupPlayer()
+        stopLocalSpeechIfNeeded()
+        activeNarrationContext = nil
         activeStoryID = requestID
         activeHighlight = nil
         activeStatus = StoryNarrationStatus(
@@ -485,6 +520,81 @@ final class StoryNarrationController: NSObject, ObservableObject {
         player = nil
         playerAudioFileURL = nil
         activeSentenceTimings.removeAll()
+    }
+
+    private func fallbackToLocalNarrationIfPossible(
+        reason: StoryNarrationFailureReason,
+        requestID: String
+    ) {
+        guard
+            let activeNarrationContext,
+            activeNarrationContext.request.id == requestID
+        else {
+            setFailure(reason, requestID: requestID)
+            return
+        }
+
+        startLocalNarration(
+            for: activeNarrationContext.request,
+            segments: activeNarrationContext.segments,
+            requestID: requestID,
+            fallbackReason: reason
+        )
+    }
+
+    private func startLocalNarration(
+        for request: StoryNarrationRequest,
+        segments: [RemoteNarrationSegmentPayload],
+        requestID: String,
+        fallbackReason: StoryNarrationFailureReason
+    ) {
+        cleanupPlayer()
+        stopLocalSpeechIfNeeded()
+
+        let utterancePlans = Self.localSpeechUtterancePlans(
+            for: request,
+            segments: segments,
+            requestID: requestID
+        )
+        guard utterancePlans.isEmpty == false else {
+            setFailure(fallbackReason, requestID: requestID)
+            return
+        }
+
+        activeNarrationContext = ActiveNarrationContext(request: request, segments: segments)
+        activeStatus = StoryNarrationStatus(
+            requestID: requestID,
+            stage: .preparingPlayback,
+            progress: 0.96
+        )
+        activeHighlight = nil
+        localSpeechHighlightsByUtteranceID = Dictionary(
+            uniqueKeysWithValues: utterancePlans.map { plan in
+                (ObjectIdentifier(plan.utterance), plan.highlight)
+            }
+        )
+        localSpeechUtteranceIDsInOrder = utterancePlans.map { ObjectIdentifier($0.utterance) }
+        narrationTask = nil
+
+        for plan in utterancePlans {
+            speechSynthesizer.speak(plan.utterance)
+        }
+
+        activeStatus = StoryNarrationStatus(
+            requestID: requestID,
+            stage: .playing,
+            progress: nil
+        )
+    }
+
+    private func stopLocalSpeechIfNeeded() {
+        isStoppingLocalSpeech = speechSynthesizer.isSpeaking || speechSynthesizer.isPaused
+        if isStoppingLocalSpeech {
+            speechSynthesizer.stopSpeaking(at: .immediate)
+        }
+
+        localSpeechHighlightsByUtteranceID.removeAll()
+        localSpeechUtteranceIDsInOrder.removeAll()
     }
 
     private func prepareNarrationCacheDirectoryIfNeeded() {
@@ -693,6 +803,29 @@ final class StoryNarrationController: NSObject, ObservableObject {
         return segments
     }
 
+    private static func localSpeechUtterancePlans(
+        for request: StoryNarrationRequest,
+        segments: [RemoteNarrationSegmentPayload],
+        requestID: String
+    ) -> [(utterance: AVSpeechUtterance, highlight: StoryNarrationHighlight)] {
+        segments.flatMap { payload in
+            payload.sentences.map { sentence in
+                let utterance = AVSpeechUtterance(string: sentence.text)
+                utterance.voice = localSpeechVoice(for: request.edition)
+                utterance.rate = localSpeechRate(for: request.ageBand)
+                utterance.prefersAssistiveTechnologySettings = true
+                utterance.postUtteranceDelay = 0.04
+
+                let highlight = StoryNarrationHighlight(
+                    requestID: requestID,
+                    segment: payload.segment,
+                    sentenceIndex: sentence.index
+                )
+                return (utterance, highlight)
+            }
+        }
+    }
+
     private static func estimatedSentenceTimings(
         from segments: [RemoteNarrationSegmentPayload],
         totalDuration: Double,
@@ -778,6 +911,39 @@ final class StoryNarrationController: NSObject, ObservableObject {
         }.count
 
         return max(Double(cjkScalars), 3)
+    }
+
+    private static func localSpeechVoice(for edition: AppEdition) -> AVSpeechSynthesisVoice? {
+        AVSpeechSynthesisVoice(language: localSpeechLanguageCode(for: edition))
+    }
+
+    private static func localSpeechLanguageCode(for edition: AppEdition) -> String {
+        switch edition {
+        case .taiwanZhHant:
+            return "zh-TW"
+        case .japanJa:
+            return "ja-JP"
+        case .unitedStatesEn:
+            return "en-US"
+        }
+    }
+
+    private static func localSpeechRate(for ageBand: AgeBand) -> Float {
+        let multiplier: Double
+        switch ageBand {
+        case .ages6to9:
+            multiplier = 0.82
+        case .ages9to12:
+            multiplier = 0.9
+        }
+
+        let baseRate = Double(AVSpeechUtteranceDefaultSpeechRate) * multiplier
+        return Float(
+            min(
+                max(baseRate, Double(AVSpeechUtteranceMinimumSpeechRate)),
+                Double(AVSpeechUtteranceMaximumSpeechRate)
+            )
+        )
     }
 
     private static func remoteVoiceProfile(for edition: AppEdition, ageBand: AgeBand) -> String {
@@ -2079,6 +2245,54 @@ final class StoryNarrationController: NSObject, ObservableObject {
             return .japanese
         case .english:
             return .english
+        }
+    }
+}
+
+@MainActor
+extension StoryNarrationController: AVSpeechSynthesizerDelegate {
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        let utteranceID = ObjectIdentifier(utterance)
+        guard let highlight = localSpeechHighlightsByUtteranceID[utteranceID] else {
+            return
+        }
+
+        activeHighlight = highlight
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        let utteranceID = ObjectIdentifier(utterance)
+        localSpeechHighlightsByUtteranceID.removeValue(forKey: utteranceID)
+        if localSpeechUtteranceIDsInOrder.first == utteranceID {
+            localSpeechUtteranceIDsInOrder.removeFirst()
+        } else {
+            localSpeechUtteranceIDsInOrder.removeAll { $0 == utteranceID }
+        }
+
+        if localSpeechUtteranceIDsInOrder.isEmpty {
+            isStoppingLocalSpeech = false
+            finishPlayback()
+        }
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        let utteranceID = ObjectIdentifier(utterance)
+        localSpeechHighlightsByUtteranceID.removeValue(forKey: utteranceID)
+        localSpeechUtteranceIDsInOrder.removeAll { $0 == utteranceID }
+
+        guard synthesizer.isSpeaking == false else {
+            return
+        }
+
+        let userInitiatedStop = isStoppingLocalSpeech
+        isStoppingLocalSpeech = false
+
+        guard userInitiatedStop == false else {
+            return
+        }
+
+        if let requestID = activeStoryID {
+            setFailure(.generationFailed, requestID: requestID)
         }
     }
 }
